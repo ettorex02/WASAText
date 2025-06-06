@@ -197,572 +197,571 @@ components:
           items:
             $ref: '#/components/schemas/User'
 
-# --- PATHS ---
-
-/session:
-  post:
-    summary: Logs in the user
-    description: Allows a user to log in by providing their name.
-    operationId: doLogin
-    tags: [login]
-    security:
-      - bearerAuth: []
-    requestBody:
-      required: true
-      description: User details
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for user login
-            required: [name]
-            properties:
-              name:
-                type: string
-                minLength: 3
-                maxLength: 16
-                pattern: '^[a-zA-Z0-9_]+$'
-                description: Name of the user
-                example: Maria
-    responses:
-      '201':
-        description: User log-in action successful
+paths:
+  /session:
+    post:
+      summary: Logs in the user
+      description: Allows a user to log in by providing their name.
+      operationId: doLogin
+      tags: [login]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: User details
         content:
           application/json:
             schema:
               type: object
-              description: Login response object
+              description: Request body for user login
+              required: [name]
               properties:
-                identifier:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 16
+                  pattern: '^[a-zA-Z0-9_]+$'
+                  description: Name of the user
+                  example: Maria
+      responses:
+        '201':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Login response object
+                properties:
+                  identifier:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                    pattern: '^[a-zA-Z0-9]+$'
+                    description: Session identifier
+                    example: abcdef012345
+
+  /users:
+    post:
+      summary: Create a new user
+      description: Create a new user with username, display name, and profile picture
+      operationId: createUser
+      tags: [user]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: Request body for creating a new user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    get:
+      summary: List all users (debug)
+      description: Retrieve the list of all users (for debug purposes)
+      operationId: listUsers
+      tags: [user]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of users
+                minItems: 0
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /users/{username}:
+    patch:
+      summary: Update display name
+      description: Update the display name of a user
+      operationId: setMyUserName
+      tags: [user]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 32
+            pattern: '^[a-zA-Z0-9_]+$'
+      requestBody:
+        required: true
+        description: Request body for updating display name
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Request body for updating display name
+              required: [newName]
+              properties:
+                newName:
                   type: string
                   minLength: 1
                   maxLength: 64
-                  pattern: '^[a-zA-Z0-9]+$'
-                  description: Session identifier
-                  example: abcdef012345
-
-/users:
-  post:
-    summary: Create a new user
-    description: Create a new user with username, display name, and profile picture
-    operationId: createUser
-    tags: [user]
-    security:
-      - bearerAuth: []
-    requestBody:
-      required: true
-      description: Request body for creating a new user
-      content:
-        application/json:
+                  pattern: '^.*$'
+                  description: New display name for the user
+      responses:
+        '200':
+          description: Name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    get:
+      summary: Get a user by username
+      description: Retrieve a user by their username
+      operationId: getUser
+      tags: [user]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
           schema:
-            $ref: '#/components/schemas/User'
-    responses:
-      '201':
-        description: User created successfully
+            type: string
+            minLength: 3
+            maxLength: 32
+            pattern: '^[a-zA-Z0-9_]+$'
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /users/{username}/photo:
+    patch:
+      summary: Update user profile picture
+      description: Update the profile picture of a user
+      operationId: setMyPhoto
+      tags: [user]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: username
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 32
+            pattern: '^[a-zA-Z0-9_]+$'
+      requestBody:
+        required: true
+        description: Request body for updating user photo
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
-  get:
-    summary: List all users (debug)
-    description: Retrieve the list of all users (for debug purposes)
-    operationId: listUsers
-    tags: [user]
-    security:
-      - bearerAuth: []
-    responses:
-      '200':
-        description: List of users
-        content:
-          application/json:
-            schema:
-              type: array
-              description: List of users
-              minItems: 0
-              maxItems: 1000
-              items:
+              type: object
+              description: Request body for updating user photo
+              required: [photoUrl]
+              properties:
+                photoUrl:
+                  type: string
+                  format: uri
+                  minLength: 10
+                  maxLength: 2048
+                  pattern: '^https?://.*$'
+                  description: New photo URL for the user
+      responses:
+        '200':
+          description: Profile picture updated
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/User'
 
-/users/{username}:
-  patch:
-    summary: Update display name
-    description: Update the display name of a user
-    operationId: setMyUserName
-    tags: [user]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: username
-        required: true
-        schema:
-          type: string
-          minLength: 3
-          maxLength: 32
-          pattern: '^[a-zA-Z0-9_]+$'
-    requestBody:
-      required: true
-      description: Request body for updating display name
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for updating display name
-            required: [newName]
-            properties:
-              newName:
-                type: string
-                minLength: 1
-                maxLength: 64
-                pattern: '^.*$'
-                description: New display name for the user
-    responses:
-      '200':
-        description: Name updated successfully
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      '400':
-        $ref: '#/components/responses/ValidationError'
-      '404':
-        $ref: '#/components/responses/NotFoundError'
-  get:
-    summary: Get a user by username
-    description: Retrieve a user by their username
-    operationId: getUser
-    tags: [user]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: username
-        required: true
-        schema:
-          type: string
-          minLength: 3
-          maxLength: 32
-          pattern: '^[a-zA-Z0-9_]+$'
-    responses:
-      '200':
-        description: User found
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      '404':
-        $ref: '#/components/responses/NotFoundError'
-
-/users/{username}/photo:
-  patch:
-    summary: Update user profile picture
-    description: Update the profile picture of a user
-    operationId: setMyPhoto
-    tags: [user]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: username
-        required: true
-        schema:
-          type: string
-          minLength: 3
-          maxLength: 32
-          pattern: '^[a-zA-Z0-9_]+$'
-    requestBody:
-      required: true
-      description: Request body for updating user photo
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for updating user photo
-            required: [photoUrl]
-            properties:
-              photoUrl:
-                type: string
-                format: uri
-                minLength: 10
-                maxLength: 2048
-                pattern: '^https?://.*$'
-                description: New photo URL for the user
-    responses:
-      '200':
-        description: Profile picture updated
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-
-/conversations:
-  get:
-    summary: List all conversations
-    description: Retrieve all conversations for the current user
-    operationId: getMyConversations
-    tags: [conversation]
-    security:
-      - bearerAuth: []
-    responses:
-      '200':
-        description: List of conversations
-        content:
-          application/json:
-            schema:
-              type: array
-              description: List of conversations
-              minItems: 0
-              maxItems: 1000
-              items:
-                $ref: '#/components/schemas/Conversation'
-
-/conversations/{id}/messages:
-  get:
-    summary: Get messages of a conversation
-    description: Retrieve all messages in a conversation
-    operationId: getConversation
-    tags: [message]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-    responses:
-      '200':
-        description: Messages fetched
-        content:
-          application/json:
-            schema:
-              type: array
-              description: List of messages in the conversation
-              minItems: 0
-              maxItems: 1000
-              items:
-                $ref: '#/components/schemas/Message'
-  post:
-    summary: Send a new message
-    description: Send a new message in a conversation
-    operationId: sendMessage
-    tags: [message]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      description: Request body for sending a new message
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for sending a new message
-            required: [content, mediaType]
-            properties:
-              content:
-                type: string
-                minLength: 1
-                maxLength: 4096
-                pattern: '^.*$'
-                description: Message content
-              mediaType:
-                type: string
-                enum: [text, photo]
-                description: Type of media
-    responses:
-      '201':
-        description: Message sent
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-
-/conversations/{id}/messages/{messageId}:
-  delete:
-    summary: Delete a message
-    description: Delete a message from a conversation
-    operationId: deleteMessage
-    tags: [message]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-      - in: path
-        name: messageId
-        required: true
-        schema:
-          type: integer
-    responses:
-      '204':
-        description: Message deleted
-
-/conversations/{id}/messages/{messageId}/forward:
-  post:
-    summary: Forward a message to another conversation
-    description: Forward a message to another conversation
-    operationId: forwardMessage
-    tags: [message]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-      - in: path
-        name: messageId
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      description: Request body for forwarding a message
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for forwarding a message
-            required: [targetConversationId]
-            properties:
-              targetConversationId:
-                type: integer
-                description: ID of the conversation to forward the message to
-    responses:
-      '200':
-        description: Message forwarded
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-
-/conversations/{id}/messages/{messageId}/reactions:
-  post:
-    summary: Add a reaction
-    description: Add a reaction to a message
-    operationId: commentMessage
-    tags: [message]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-      - in: path
-        name: messageId
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      description: Request body for adding a reaction
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for adding a reaction
-            required: [emoji]
-            properties:
-              emoji:
-                type: string
-                minLength: 1
-                maxLength: 4
-                pattern: '^.*$'
-                description: Emoji to add as a reaction
-    responses:
-      '200':
-        description: Reaction added
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Message'
-  delete:
-    summary: Remove a reaction
-    description: Remove a reaction from a message
-    operationId: uncommentMessage
-    tags: [message]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-      - in: path
-        name: messageId
-        required: true
-        schema:
-          type: integer
-    responses:
-      '204':
-        description: Reaction removed
-
-/groups:
-  post:
-    summary: Create group
-    description: Create a new group with a name and members
-    operationId: addToGroup
-    tags: [group]
-    security:
-      - bearerAuth: []
-    requestBody:
-      required: true
-      description: Request body for creating a group
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for creating a group
-            required: [name, members]
-            properties:
-              name:
-                type: string
-                minLength: 1
-                maxLength: 64
-                pattern: '^.*$'
-                description: Name of the group
-              members:
+  /conversations:
+    get:
+      summary: List all conversations
+      description: Retrieve all conversations for the current user
+      operationId: getMyConversations
+      tags: [conversation]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
                 type: array
-                minItems: 1
-                maxItems: 100
-                description: List of usernames to add to the group
+                description: List of conversations
+                minItems: 0
+                maxItems: 1000
                 items:
+                  $ref: '#/components/schemas/Conversation'
+
+  /conversations/{id}/messages:
+    get:
+      summary: Get messages of a conversation
+      description: Retrieve all messages in a conversation
+      operationId: getConversation
+      tags: [message]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Messages fetched
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of messages in the conversation
+                minItems: 0
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/Message'
+    post:
+      summary: Send a new message
+      description: Send a new message in a conversation
+      operationId: sendMessage
+      tags: [message]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Request body for sending a new message
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Request body for sending a new message
+              required: [content, mediaType]
+              properties:
+                content:
                   type: string
-                  minLength: 3
-                  maxLength: 32
-                  pattern: '^[a-zA-Z0-9_]+$'
-                  description: Username to add to the group
-    responses:
-      '201':
-        description: Group created
+                  minLength: 1
+                  maxLength: 4096
+                  pattern: '^.*$'
+                  description: Message content
+                mediaType:
+                  type: string
+                  enum: [text, photo]
+                  description: Type of media
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /conversations/{id}/messages/{messageId}:
+    delete:
+      summary: Delete a message
+      description: Delete a message from a conversation
+      operationId: deleteMessage
+      tags: [message]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Message deleted
+
+  /conversations/{id}/messages/{messageId}/forward:
+    post:
+      summary: Forward a message to another conversation
+      description: Forward a message to another conversation
+      operationId: forwardMessage
+      tags: [message]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Request body for forwarding a message
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Group'
-  get:
-    summary: List all groups (debug)
-    description: Retrieve the list of all groups (for debug purposes)
-    operationId: listGroups
-    tags: [group]
-    security:
-      - bearerAuth: []
-    responses:
-      '200':
-        description: List of groups
+              type: object
+              description: Request body for forwarding a message
+              required: [targetConversationId]
+              properties:
+                targetConversationId:
+                  type: integer
+                  description: ID of the conversation to forward the message to
+      responses:
+        '200':
+          description: Message forwarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /conversations/{id}/messages/{messageId}/reactions:
+    post:
+      summary: Add a reaction
+      description: Add a reaction to a message
+      operationId: commentMessage
+      tags: [message]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Request body for adding a reaction
         content:
           application/json:
             schema:
-              type: array
-              description: List of groups
-              minItems: 0
-              maxItems: 1000
-              items:
+              type: object
+              description: Request body for adding a reaction
+              required: [emoji]
+              properties:
+                emoji:
+                  type: string
+                  minLength: 1
+                  maxLength: 4
+                  pattern: '^.*$'
+                  description: Emoji to add as a reaction
+      responses:
+        '200':
+          description: Reaction added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+    delete:
+      summary: Remove a reaction
+      description: Remove a reaction from a message
+      operationId: uncommentMessage
+      tags: [message]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Reaction removed
+
+  /groups:
+    post:
+      summary: Create group
+      description: Create a new group with a name and members
+      operationId: addToGroup
+      tags: [group]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: Request body for creating a group
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Request body for creating a group
+              required: [name, members]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  pattern: '^.*$'
+                  description: Name of the group
+                members:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  description: List of usernames to add to the group
+                  items:
+                    type: string
+                    minLength: 3
+                    maxLength: 32
+                    pattern: '^[a-zA-Z0-9_]+$'
+                    description: Username to add to the group
+      responses:
+        '201':
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+    get:
+      summary: List all groups (debug)
+      description: Retrieve the list of all groups (for debug purposes)
+      operationId: listGroups
+      tags: [group]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of groups
+                minItems: 0
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/Group'
+
+  /groups/{id}/members:
+    delete:
+      summary: Leave group
+      description: Leave a group by removing the current user from it
+      operationId: leaveGroup
+      tags: [group]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Left the group
+
+  /groups/{id}/name:
+    patch:
+      summary: Set group name
+      description: Set or update the name of a group
+      operationId: setGroupName
+      tags: [group]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Request body for updating group name
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Request body for updating group name
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  pattern: '^.*$'
+                  description: New group name
+      responses:
+        '200':
+          description: Name changed
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/Group'
 
-/groups/{id}/members:
-  delete:
-    summary: Leave group
-    description: Leave a group by removing the current user from it
-    operationId: leaveGroup
-    tags: [group]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-    responses:
-      '204':
-        description: Left the group
-
-/groups/{id}/name:
-  patch:
-    summary: Set group name
-    description: Set or update the name of a group
-    operationId: setGroupName
-    tags: [group]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      description: Request body for updating group name
-      content:
-        application/json:
+  /groups/{id}/photo:
+    patch:
+      summary: Set group photo
+      description: Set or update the photo of a group
+      operationId: setGroupPhoto
+      tags: [group]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
           schema:
-            type: object
-            description: Request body for updating group name
-            required: [name]
-            properties:
-              name:
-                type: string
-                minLength: 1
-                maxLength: 64
-                pattern: '^.*$'
-                description: New group name
-    responses:
-      '200':
-        description: Name changed
+            type: integer
+      requestBody:
+        required: true
+        description: Request body for updating the group photo
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Group'
-
-/groups/{id}/photo:
-  patch:
-    summary: Set group photo
-    description: Set or update the photo of a group
-    operationId: setGroupPhoto
-    tags: [group]
-    security:
-      - bearerAuth: []
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-    requestBody:
-      required: true
-      description: Request body for updating the group photo
-      content:
-        application/json:
-          schema:
-            type: object
-            description: Request body for updating the group photo
-            required: [photoUrl]
-            properties:
-              photoUrl:
-                type: string
-                format: uri
-                minLength: 10
-                maxLength: 2048
-                pattern: '^https?://.*$'
-                description: New group photo URL
-    responses:
-      '200':
-        description: Photo updated
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Group'
+              type: object
+              description: Request body for updating the group photo
+              required: [photoUrl]
+              properties:
+                photoUrl:
+                  type: string
+                  format: uri
+                  minLength: 10
+                  maxLength: 2048
+                  pattern: '^https?://.*$'
+                  description: New group photo URL
+      responses:
+        '200':
+          description: Photo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
