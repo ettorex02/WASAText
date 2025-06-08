@@ -107,7 +107,6 @@ components:
           example: 😄
         user:
           $ref: '#/components/schemas/User'
-          description: User who reacted
 
     Message:
       type: object
@@ -142,7 +141,6 @@ components:
             $ref: '#/components/schemas/Reaction'
         sender:
           $ref: '#/components/schemas/User'
-          description: User who sent the message
         status:
           type: string
           enum: [sent, received, read]
@@ -164,7 +162,6 @@ components:
           example: 123
         lastMessage:
           $ref: '#/components/schemas/Message'
-          description: Last message in the conversation
         participants:
           type: array
           minItems: 1
@@ -239,6 +236,8 @@ paths:
                     pattern: '^[a-zA-Z0-9]+$'
                     description: Session identifier
                     example: abcdef012345
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /users:
     post:
@@ -262,6 +261,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     get:
       summary: List all users (debug)
       description: Retrieve the list of all users (for debug purposes)
@@ -281,8 +282,19 @@ paths:
                 maxItems: 1000
                 items:
                   $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /users/{username}:
+    parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: '^[a-zA-Z0-9_]+$'
     patch:
       summary: Update display name
       description: Update the display name of a user
@@ -290,15 +302,6 @@ paths:
       tags: [user]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: username
-          required: true
-          schema:
-            type: string
-            minLength: 3
-            maxLength: 32
-            pattern: '^[a-zA-Z0-9_]+$'
       requestBody:
         required: true
         description: Request body for updating display name
@@ -324,6 +327,8 @@ paths:
                 $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFoundError'
     get:
@@ -333,15 +338,6 @@ paths:
       tags: [user]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: username
-          required: true
-          schema:
-            type: string
-            minLength: 3
-            maxLength: 32
-            pattern: '^[a-zA-Z0-9_]+$'
       responses:
         '200':
           description: User found
@@ -349,10 +345,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFoundError'
 
   /users/{username}/photo:
+    parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: '^[a-zA-Z0-9_]+$'
     patch:
       summary: Update user profile picture
       description: Update the profile picture of a user
@@ -360,15 +367,6 @@ paths:
       tags: [user]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: username
-          required: true
-          schema:
-            type: string
-            minLength: 3
-            maxLength: 32
-            pattern: '^[a-zA-Z0-9_]+$'
       requestBody:
         required: true
         description: Request body for updating user photo
@@ -393,6 +391,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /conversations:
     get:
@@ -414,8 +414,16 @@ paths:
                 maxItems: 1000
                 items:
                   $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /conversations/{id}/messages:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
     get:
       summary: Get messages of a conversation
       description: Retrieve all messages in a conversation
@@ -423,12 +431,6 @@ paths:
       tags: [message]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
       responses:
         '200':
           description: Messages fetched
@@ -441,6 +443,8 @@ paths:
                 maxItems: 1000
                 items:
                   $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     post:
       summary: Send a new message
       description: Send a new message in a conversation
@@ -448,12 +452,6 @@ paths:
       tags: [message]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         description: Request body for sending a new message
@@ -481,8 +479,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /conversations/{id}/messages/{messageId}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - in: path
+        name: messageId
+        required: true
+        schema:
+          type: integer
     delete:
       summary: Delete a message
       description: Delete a message from a conversation
@@ -490,22 +501,24 @@ paths:
       tags: [message]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: integer
       responses:
         '204':
           description: Message deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /conversations/{id}/messages/{messageId}/forward:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - in: path
+        name: messageId
+        required: true
+        schema:
+          type: integer
     post:
       summary: Forward a message to another conversation
       description: Forward a message to another conversation
@@ -513,17 +526,6 @@ paths:
       tags: [message]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         description: Request body for forwarding a message
@@ -544,8 +546,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /conversations/{id}/messages/{messageId}/reactions:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - in: path
+        name: messageId
+        required: true
+        schema:
+          type: integer
     post:
       summary: Add a reaction
       description: Add a reaction to a message
@@ -553,17 +568,6 @@ paths:
       tags: [message]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         description: Request body for adding a reaction
@@ -587,6 +591,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     delete:
       summary: Remove a reaction
       description: Remove a reaction from a message
@@ -594,20 +600,11 @@ paths:
       tags: [message]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: integer
       responses:
         '204':
           description: Reaction removed
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /groups:
     post:
@@ -651,6 +648,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
     get:
       summary: List all groups (debug)
       description: Retrieve the list of all groups (for debug purposes)
@@ -670,8 +669,16 @@ paths:
                 maxItems: 1000
                 items:
                   $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /groups/{id}/members:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
     delete:
       summary: Leave group
       description: Leave a group by removing the current user from it
@@ -679,17 +686,19 @@ paths:
       tags: [group]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
       responses:
         '204':
           description: Left the group
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /groups/{id}/name:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
     patch:
       summary: Set group name
       description: Set or update the name of a group
@@ -697,12 +706,6 @@ paths:
       tags: [group]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         description: Request body for updating group name
@@ -726,8 +729,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /groups/{id}/photo:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
     patch:
       summary: Set group photo
       description: Set or update the photo of a group
@@ -735,12 +746,6 @@ paths:
       tags: [group]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
       requestBody:
         required: true
         description: Request body for updating the group photo
@@ -765,3 +770,5 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Group'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
