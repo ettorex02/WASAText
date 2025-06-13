@@ -68,8 +68,12 @@ components:
     User:
       type: object
       description: A user of the WASAText app
-      required: [username]
+      required: [id, username]
       properties:
+        id:
+          type: integer
+          description: Unique user identifier
+          example: 1
         username:
           type: string
           minLength: 3
@@ -96,8 +100,12 @@ components:
     Reaction:
       type: object
       description: A reaction to a message
-      required: [user, emoji]
+      required: [id, user, emoji]
       properties:
+        id:
+          type: integer
+          description: Unique reaction identifier
+          example: 101
         emoji:
           type: string
           minLength: 1
