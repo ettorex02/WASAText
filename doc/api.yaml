@@ -234,18 +234,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: Login response object
-                properties:
-                  identifier:
-                    type: string
-                    minLength: 1
-                    maxLength: 64
-                    pattern: '^[a-zA-Z0-9]+$'
-                    description: Session identifier
-                    example: abcdef012345
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
 
   /users:
     post:
