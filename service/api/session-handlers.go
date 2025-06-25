@@ -3,17 +3,13 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 
 	"github.com/ettorex02/WASAText/service/structures"
 	"github.com/julienschmidt/httprouter"
 )
 
-var (
-	users  = make(map[string]*structures.User)
-	nextID = 1
-	mu     sync.Mutex
-)
+// Assicurati che _router abbia il campo db di tipo AppDatabase
+// type _router struct { db database.AppDatabase }
 
 type SessionRequest struct {
 	Name           string `json:"name"`
@@ -33,34 +29,25 @@ func (rt *_router) SessionHandler(w http.ResponseWriter, r *http.Request, _ http
 		return
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	user, exists := users[req.Name]
-	if !exists {
-		// Per la creazione, servono anche displayName e profilePicture
-		if req.DisplayName == "" || req.ProfilePicture == "" {
-			http.Error(w, `{"message":"User does not exist. To register, provide also displayName and profilePicture."}`, http.StatusBadRequest)
+	user, action, err := rt.db.DoLogin(req.Name, req.DisplayName, req.ProfilePicture)
+	if err != nil {
+		if err.Error() == "registrazione già effettuata" {
+			http.Error(w, `{"message":"Registrazione già effettuata"}`, http.StatusBadRequest)
 			return
 		}
-		user = &structures.User{
-			ID:             nextID,
-			Username:       req.Name,
-			DisplayName:    req.DisplayName,
-			ProfilePicture: req.ProfilePicture,
+		if err.Error() == "per la registrazione servono displayName e profilePicture" {
+			http.Error(w, `{"message":"Per la registrazione servono displayName e profilePicture"}`, http.StatusBadRequest)
+			return
 		}
-		users[req.Name] = user
-		nextID++
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(struct {
-			Message string           `json:"message"`
-			User    *structures.User `json:"user"`
-		}{
-			Message: "User created successfully",
-			User:    user,
-		})
+		http.Error(w, `{"message":"Internal server error"}`, http.StatusInternalServerError)
 		return
+	}
+
+	var msg string
+	if action == "login" {
+		msg = "Login effettuato"
+	} else if action == "register" {
+		msg = "Registrazione effettuata"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -69,7 +56,7 @@ func (rt *_router) SessionHandler(w http.ResponseWriter, r *http.Request, _ http
 		Message string           `json:"message"`
 		User    *structures.User `json:"user"`
 	}{
-		Message: "Login successful",
+		Message: msg,
 		User:    user,
 	})
 }
