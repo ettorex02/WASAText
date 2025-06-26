@@ -11,19 +11,13 @@ import (
 // Assicurati che _router abbia il campo db di tipo AppDatabase
 // type _router struct { db database.AppDatabase }
 
-type SessionRequest struct {
-	Name           string `json:"name"`
-	DisplayName    string `json:"displayName,omitempty"`
-	ProfilePicture string `json:"profilePicture,omitempty"`
-}
-
 func (rt *_router) SessionHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"message":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req SessionRequest
+	var req structures.SessionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Name) < 3 || len(req.Name) > 16 {
 		http.Error(w, `{"message":"Invalid request: name is required and must be 3-16 characters"}`, http.StatusBadRequest)
 		return

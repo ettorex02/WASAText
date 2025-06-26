@@ -35,3 +35,9 @@ type Group struct {
 	Name    string `json:"name"`
 	Members []User `json:"members"`
 }
+
+type SessionRequest struct {
+	Name           string `json:"name"`
+	DisplayName    string `json:"displayName,omitempty"`
+	ProfilePicture string `json:"profilePicture,omitempty"`
+}
