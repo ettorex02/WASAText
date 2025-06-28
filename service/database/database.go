@@ -44,6 +44,8 @@ type AppDatabase interface {
 	CheckUserExistence(username string) (bool, error)
 	DoLogin(username, displayName, profilePicture string) (*structures.User, string, error)
 	GetUserByUsername(username string) (*structures.User, error)
+	SetMyPhoto(username, photoUrl string) error
+	SetMyUserName(oldUsername, newUsername string) error
 }
 
 type appdbimpl struct {

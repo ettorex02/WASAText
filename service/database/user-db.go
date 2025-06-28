@@ -81,3 +81,15 @@ func (db *appdbimpl) GetUserByUsername(username string) (*structures.User, error
 	}
 	return &user, nil
 }
+
+// SetMyPhoto aggiorna la foto profilo dell'utente
+func (db *appdbimpl) SetMyPhoto(username, photoUrl string) error {
+	_, err := db.c.Exec(`UPDATE users SET profile_picture = ? WHERE username = ?`, photoUrl, username)
+	return err
+}
+
+// SetMyUsername aggiorna lo username dell'utente
+func (db *appdbimpl) SetMyUserName(oldUsername, newUsername string) error {
+	_, err := db.c.Exec(`UPDATE users SET username = ? WHERE username = ?`, newUsername, oldUsername)
+	return err
+}

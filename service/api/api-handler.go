@@ -11,6 +11,8 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.GET("/context", rt.wrap(rt.getContextReply))
 	rt.router.POST("/session", rt.SessionHandler)
 	rt.router.GET("/users/:username", rt.GetUserHandler)
+	rt.router.PATCH("/users/:username", rt.SetMyUserName)
+	rt.router.PATCH("/users/:username/photo", rt.SetMyPhoto)
 
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)

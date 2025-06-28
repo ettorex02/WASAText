@@ -19,9 +19,11 @@ func applyCORSHandler(h http.Handler) http.Handler {
 			"Origin",
 			"X-Requested-With",
 		}),
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT"}),
-		// Do not modify the CORS origin and max age, they are used in the evaluation.
-		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"}),
+		// Se vuoi permettere solo il frontend in sviluppo, usa:
+		// handlers.AllowedOrigins([]string{"http://localhost:5173"}),
+		// Altrimenti "*" permette tutte le origini (non sicuro in produzione)
+		handlers.AllowedOrigins([]string{"http://localhost:5173"}),
 		handlers.MaxAge(1),
 	)(h)
 }
