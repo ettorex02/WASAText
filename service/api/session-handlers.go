@@ -26,11 +26,15 @@ func (rt *_router) SessionHandler(w http.ResponseWriter, r *http.Request, _ http
 	user, action, err := rt.db.DoLogin(req.Name, req.DisplayName, req.ProfilePicture)
 	if err != nil {
 		if err.Error() == "registrazione già effettuata" {
-			http.Error(w, `{"message":"Registrazione già effettuata"}`, http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"message": "Registrazione già effettuata"})
 			return
 		}
 		if err.Error() == "per la registrazione servono displayName e profilePicture" {
-			http.Error(w, `{"message":"Per la registrazione servono displayName e profilePicture"}`, http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"message": "Utente non trovato, effettuare la registrazione"})
 			return
 		}
 		http.Error(w, `{"message":"Internal server error"}`, http.StatusInternalServerError)

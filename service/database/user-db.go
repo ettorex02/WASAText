@@ -69,3 +69,15 @@ func (db *appdbimpl) DoLogin(username, displayName, profilePicture string) (*str
 		ProfilePicture: profilePicture,
 	}, "register", nil
 }
+
+// GetUserByUsername restituisce i dati di un utente dato il suo username
+func (db *appdbimpl) GetUserByUsername(username string) (*structures.User, error) {
+	var user structures.User
+	err := db.c.QueryRow(
+		`SELECT id, username, display_name, profile_picture FROM users WHERE username = ?`, username,
+	).Scan(&user.ID, &user.Username, &user.DisplayName, &user.ProfilePicture)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

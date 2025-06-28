@@ -771,3 +771,40 @@ paths:
                 $ref: '#/components/schemas/Group'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+
+  /users/search:
+    get:
+      summary: Search users by username
+      description: Search for users whose username contains the given query string.
+      operationId: searchUsers
+      tags: [user]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 32
+            pattern: '^[a-zA-Z0-9_]+$'
+          description: Partial or full username to search for
+      responses:
+        '200':
+          description: List of matching users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    username:
+                      type: string
+                    profilePicture:
+                      type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
