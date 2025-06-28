@@ -70,11 +70,11 @@ func (db *appdbimpl) DoLogin(username, displayName, profilePicture string) (*str
 	}, "register", nil
 }
 
-// GetUserByUsername restituisce i dati di un utente dato il suo username
-func (db *appdbimpl) GetUserByUsername(username string) (*structures.User, error) {
+// GetUserById restituisce i dati di un utente dato il suo ID
+func (db *appdbimpl) GetUserById(userId string) (*structures.User, error) {
 	var user structures.User
 	err := db.c.QueryRow(
-		`SELECT id, username, display_name, profile_picture FROM users WHERE username = ?`, username,
+		`SELECT id, username, display_name, profile_picture FROM users WHERE id = ?`, userId,
 	).Scan(&user.ID, &user.Username, &user.DisplayName, &user.ProfilePicture)
 	if err != nil {
 		return nil, err
@@ -82,14 +82,35 @@ func (db *appdbimpl) GetUserByUsername(username string) (*structures.User, error
 	return &user, nil
 }
 
-// SetMyPhoto aggiorna la foto profilo dell'utente
-func (db *appdbimpl) SetMyPhoto(username, photoUrl string) error {
-	_, err := db.c.Exec(`UPDATE users SET profile_picture = ? WHERE username = ?`, photoUrl, username)
+// SetMyUserNameById aggiorna lo username dell'utente dato il suo ID
+func (db *appdbimpl) SetMyUserNameById(userId, newUsername string) error {
+	_, err := db.c.Exec(`UPDATE users SET username = ? WHERE id = ?`, newUsername, userId)
 	return err
 }
 
-// SetMyUsername aggiorna lo username dell'utente
-func (db *appdbimpl) SetMyUserName(oldUsername, newUsername string) error {
-	_, err := db.c.Exec(`UPDATE users SET username = ? WHERE username = ?`, newUsername, oldUsername)
+// SetMyPhotoById aggiorna la foto profilo dell'utente dato il suo ID
+func (db *appdbimpl) SetMyPhotoById(userId, photoUrl string) error {
+	_, err := db.c.Exec(`UPDATE users SET profile_picture = ? WHERE id = ?`, photoUrl, userId)
 	return err
+}
+
+// SearchUsers restituisce una lista di utenti il cui username contiene la query
+func (db *appdbimpl) SearchUsers(query string) ([]*structures.User, error) {
+	rows, err := db.c.Query(
+		`SELECT id, username, profile_picture FROM users WHERE username LIKE ? LIMIT 20`, "%"+query+"%",
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*structures.User
+	for rows.Next() {
+		var user structures.User
+		if err := rows.Scan(&user.ID, &user.Username, &user.ProfilePicture); err != nil {
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	return users, nil
 }

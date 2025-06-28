@@ -43,9 +43,10 @@ type AppDatabase interface {
 	Ping() error
 	CheckUserExistence(username string) (bool, error)
 	DoLogin(username, displayName, profilePicture string) (*structures.User, string, error)
-	GetUserByUsername(username string) (*structures.User, error)
-	SetMyPhoto(username, photoUrl string) error
-	SetMyUserName(oldUsername, newUsername string) error
+	GetUserById(userId string) (*structures.User, error)
+	SetMyPhotoById(userId, photoUrl string) error
+	SetMyUserNameById(userId, newUsername string) error
+	SearchUsers(query string) ([]*structures.User, error)
 }
 
 type appdbimpl struct {

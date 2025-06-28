@@ -23,8 +23,8 @@ func (rt *_router) GetUserHandler(w http.ResponseWriter, r *http.Request, ps htt
 	if !checkAuthorization(w, r) {
 		return
 	}
-	username := ps.ByName("username")
-	user, err := rt.db.GetUserByUsername(username)
+	userId := ps.ByName("userId")
+	user, err := rt.db.GetUserById(userId)
 	if err != nil || user == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -40,7 +40,7 @@ func (rt *_router) SetMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	if !checkAuthorization(w, r) {
 		return
 	}
-	username := ps.ByName("username")
+	userId := ps.ByName("userId")
 	var req struct {
 		PhotoUrl string `json:"photoUrl"`
 	}
@@ -49,12 +49,12 @@ func (rt *_router) SetMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		json.NewEncoder(w).Encode(map[string]string{"message": "URL non valido"})
 		return
 	}
-	if err := rt.db.SetMyPhoto(username, req.PhotoUrl); err != nil {
+	if err := rt.db.SetMyPhotoById(userId, req.PhotoUrl); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiornamento immagine"})
 		return
 	}
-	user, _ := rt.db.GetUserByUsername(username)
+	user, _ := rt.db.GetUserById(userId)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
@@ -64,7 +64,7 @@ func (rt *_router) SetMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	if !checkAuthorization(w, r) {
 		return
 	}
-	oldUsername := ps.ByName("username")
+	userId := ps.ByName("userId")
 	var req struct {
 		NewName string `json:"newName"`
 	}
@@ -73,12 +73,33 @@ func (rt *_router) SetMyUserName(w http.ResponseWriter, r *http.Request, ps http
 		json.NewEncoder(w).Encode(map[string]string{"message": "Username non valido"})
 		return
 	}
-	if err := rt.db.SetMyUserName(oldUsername, req.NewName); err != nil {
+	if err := rt.db.SetMyUserNameById(userId, req.NewName); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiornamento username"})
 		return
 	}
-	user, _ := rt.db.GetUserByUsername(req.NewName)
+	user, _ := rt.db.GetUserById(userId)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
+}
+
+// GET /users/search?q=...
+func (rt *_router) SearchUsersHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !checkAuthorization(w, r) {
+		return
+	}
+	query := r.URL.Query().Get("q")
+	if len(query) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Query troppo corta"})
+		return
+	}
+	users, err := rt.db.SearchUsers(query)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Errore ricerca utenti"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
 }

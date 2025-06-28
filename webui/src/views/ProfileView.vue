@@ -59,7 +59,7 @@ export default {
     async loadUser() {
       const username = localStorage.getItem("username");
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`http://localhost:3000/users/${username}`, {
+      const res = await fetch(`http://localhost:3000/users/${userId}`, {
         headers: { Authorization: userId }
       });
       if (res.ok) {
@@ -80,7 +80,7 @@ export default {
       }
       const username = localStorage.getItem("username");
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`http://localhost:3000/users/${username}/photo`, {
+      const res = await fetch(`http://localhost:3000/users/${userId}/photo`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: userId },
         body: JSON.stringify({ photoUrl: this.newProfilePicture })
@@ -103,9 +103,8 @@ export default {
         this.error = true;
         return;
       }
-      const username = localStorage.getItem("username");
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`http://localhost:3000/users/${username}`, {
+      const res = await fetch(`http://localhost:3000/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: userId },
         body: JSON.stringify({ newName: this.newUsername })
