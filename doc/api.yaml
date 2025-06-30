@@ -287,71 +287,6 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
-  /users/{username}:
-    parameters:
-      - in: path
-        name: username
-        required: true
-        schema:
-          type: string
-          minLength: 3
-          maxLength: 32
-          pattern: '^[a-zA-Z0-9_]+$'
-    patch:
-      summary: Update display name
-      description: Update the display name of a user
-      operationId: setMyUserName
-      tags: [user]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        description: Request body for updating display name
-        content:
-          application/json:
-            schema:
-              type: object
-              description: Request body for updating display name
-              required: [newName]
-              properties:
-                newName:
-                  type: string
-                  minLength: 1
-                  maxLength: 64
-                  pattern: '^.*$'
-                  description: New display name for the user
-      responses:
-        '200':
-          description: Name updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-    get:
-      summary: Get a user by username
-      description: Retrieve a user by their username
-      operationId: getUser
-      tags: [user]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: User found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
   /users/{userId}:
     parameters:
       - in: path
@@ -857,14 +792,21 @@ paths:
             application/json:
               schema:
                 type: array
+                description: List of matching users
+                minItems: 0
+                maxItems: 1000
                 items:
                   type: object
+                  description: User found by search
                   properties:
                     id:
                       type: integer
+                      description: Unique user identifier
                     username:
                       type: string
+                      description: Username of the user
                     profilePicture:
                       type: string
+                      description: URL of the user's profile picture
         '401':
           $ref: '#/components/responses/UnauthorizedError'
