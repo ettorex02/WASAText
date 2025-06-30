@@ -53,6 +53,8 @@ type AppDatabase interface {
 	GetMessages(conversationId int) ([]*structures.Message, error)
 	// Restituisce tutte le conversazioni di un utente con anteprima ultimo messaggio
 	GetUserConversations(userId int) ([]*structures.ConversationPreview, error)
+	SetMessagesReceived(conversationId int, userId int) error
+	SetMessagesRead(conversationId int, userId int) error
 }
 
 type appdbimpl struct {

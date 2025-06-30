@@ -810,3 +810,27 @@ paths:
                       description: URL of the user's profile picture
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  
+  /conversations/{id}/messages/read:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+    patch:
+      summary: Mark all received messages as read
+      description: Marks all messages in the conversation as read for the current user.
+      operationId: markMessagesRead
+      tags: [message]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: All messages marked as read
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'

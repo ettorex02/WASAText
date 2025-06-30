@@ -45,7 +45,7 @@
                     <div class="flex-grow-1">
                         <div class="fw-bold">{{ conv.username }}</div>
                         <div class="text-muted small">
-                            {{ conv.lastMessage }}
+                            {{ conv.lastMessage.length > 12 ? conv.lastMessage.slice(0, 12) + '…' : conv.lastMessage }}
                         </div>
                     </div>
                     <div class="text-end small text-muted ms-2">
@@ -79,10 +79,21 @@
                     </div>
                     <!-- Sezione messaggi scrollabile -->
                     <div class="flex-grow-1 overflow-auto p-3 messages-area">
-                        <div v-for="msg in messages" :key="msg.id" :class="{'text-end': msg.sender.id == userId}">
-                            <div :class="msg.sender.id == userId ? 'bg-primary text-white d-inline-block p-2 rounded mb-2' : 'bg-light d-inline-block p-2 rounded mb-2'">
-                                {{ msg.content }}
-                                <div class="small text-muted">{{ msg.timestamp }}</div>
+                        <div v-for="msg in messages" :key="msg.id"
+                            class="d-flex mb-3 align-items-end"
+                            :class="isMyMessage(msg) ? '' : 'flex-row-reverse'">
+                            <img :src="msg.sender.profilePicture" alt="profile" width="44" height="44" class="rounded-circle mx-2" />
+                            <div>
+                                <div :class="isMyMessage(msg) ? 'msg-sent' : 'msg-received'"
+                                    style="font-size: 1.3rem; max-width: 520px; word-break: break-word;">
+                                    {{ msg.content }}
+                                    <div class="small text-muted mt-1 d-flex align-items-center">
+                                        <span>{{ msg.timestamp }}</span>
+                                        <span v-if="isMyMessage(msg)" :class="getStatusClass(msg.status)" style="margin-left: 8px;">
+                                            {{ getStatusIcon(msg.status) }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -93,7 +104,7 @@
                     </form>
                 </div>
                 <div v-else class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
-                    Seleziona una conversazione
+                    Nessuna conversazione trovata. Inizia a cercare utenti per iniziare una chat!
                 </div>
             </div>
         </div>
@@ -203,7 +214,14 @@ export default {
         async openConv(conv) {
             this.openConversation = conv;
             await this.loadMessages(conv.id);
-            // RIMUOVI il setInterval per messagesPolling!
+            await this.markMessagesRead(); // Segna come letti subito se la chat è aperta
+            if (this.messagesPolling) clearInterval(this.messagesPolling);
+            this.messagesPolling = setInterval(async () => {
+                if (this.openConversation) {
+                    await this.loadMessages(this.openConversation.id);
+                    await this.markMessagesRead(); // Segna come letti ogni volta che arrivano nuovi messaggi e la chat è aperta
+                }
+            }, 1000);
         },
         async loadMessages(conversationId) {
             const userId = localStorage.getItem("userId");
@@ -226,9 +244,31 @@ export default {
             });
             if (res.ok) {
                 this.newMessage = "";
-                this.messages = await res.json();
+                // Non aggiornare qui i messaggi, ci pensa il polling!
             }
         },
+        async markMessagesRead() {
+            if (!this.openConversation) return;
+            const userId = localStorage.getItem("userId");
+            await fetch(`${__API_URL__}/conversations/${this.openConversation.id}/messages/read`, {
+                method: "PATCH",
+                headers: { Authorization: userId }
+            });
+        },
+        isMyMessage(msg) {
+            const myId = localStorage.getItem("userId");
+            // Confronta come stringhe per sicurezza
+            return String(msg.sender.id) === String(myId);
+        },
+        getStatusIcon(status) {
+            if (status === "read") return "✔✔✔";      // Tre spunte blu
+            if (status === "received") return "✔✔";   // Due spunte grigie
+            return "✔";                               // Una spunta grigia
+        },
+        getStatusClass(status) {
+            if (status === "read") return "text-primary";
+            return "text-secondary";
+        }
     },
     mounted() {
         this.loadConversations();
@@ -240,7 +280,7 @@ export default {
     },
     beforeUnmount() {
         clearInterval(this.polling);
-        // RIMUOVI clearInterval(this.messagesPolling);
+        if (this.messagesPolling) clearInterval(this.messagesPolling);
     }
 }
 </script>
@@ -266,5 +306,19 @@ export default {
     min-height: 0;
     overflow-y: auto;
     background: #f8f9fa;
+}
+.msg-sent {
+    background: #9accff;    /* sfondo chiaro per i tuoi messaggi */
+    color: #222;
+    display: inline-block;
+    padding: 1rem;
+    border-radius: 1.5rem;
+}
+.msg-received {
+    background: #67b3ff;    /* sfondo scuro per i messaggi dell'altro utente */
+    color: #222;
+    display: inline-block;
+    padding: 1rem;
+    border-radius: 1.5rem;
 }
 </style>

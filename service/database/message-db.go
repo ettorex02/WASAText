@@ -47,3 +47,21 @@ func (db *appdbimpl) GetMessages(conversationId int) ([]*structures.Message, err
 	}
 	return messages, nil
 }
+
+// Setta a "received" tutti i messaggi ricevuti dall'utente in una conversazione che sono ancora "sent"
+func (db *appdbimpl) SetMessagesReceived(conversationId int, userId int) error {
+	_, err := db.c.Exec(`
+        UPDATE messages
+        SET status = CASE WHEN status = 'sent' THEN 'received' ELSE status END
+        WHERE conversation_id = ? AND sender_id != ?`, conversationId, userId)
+	return err
+}
+
+// Setta a "read" tutti i messaggi ricevuti dall'utente in una conversazione che sono "received"
+func (db *appdbimpl) SetMessagesRead(conversationId int, userId int) error {
+	_, err := db.c.Exec(`
+        UPDATE messages
+        SET status = 'read'
+        WHERE conversation_id = ? AND sender_id != ? AND status != 'read'`, conversationId, userId)
+	return err
+}
