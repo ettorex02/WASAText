@@ -47,6 +47,7 @@ type AppDatabase interface {
 	SetMyPhotoById(userId, photoUrl string) error
 	SetMyUserNameById(userId, newUsername string) error
 	SearchUsers(query string) ([]*structures.User, error)
+	CreateConversation(user1, user2 int) (int64, error)
 }
 
 type appdbimpl struct {
@@ -58,6 +59,11 @@ type appdbimpl struct {
 func New(db *sql.DB) (AppDatabase, error) {
 	if db == nil {
 		return nil, errors.New("database is required when building a AppDatabase")
+	}
+
+	// SOLO PER SVILUPPO: elimina tutte le tabelle esistenti
+	if err := dropAllTables(db); err != nil {
+		return nil, fmt.Errorf("error dropping tables: %w", err)
 	}
 
 	// Check if the main table exists. If not, the database is empty, and we need to create the structure
@@ -83,14 +89,12 @@ func New(db *sql.DB) (AppDatabase, error) {
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );`,
 			`CREATE TABLE IF NOT EXISTS conversations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT
-            );`,
-			`CREATE TABLE IF NOT EXISTS conversation_participants (
-                conversation_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                PRIMARY KEY (conversation_id, user_id),
-                FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user1_id INTEGER NOT NULL,
+                user2_id INTEGER NOT NULL,
+                UNIQUE(user1_id, user2_id),
+                FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
             );`,
 			`CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,11 +126,26 @@ func New(db *sql.DB) (AppDatabase, error) {
 		return nil, fmt.Errorf("error checking database structure: %w", err)
 	}
 
-	return &appdbimpl{
+	appdb := &appdbimpl{
 		c: db,
-	}, nil
+	}
+
+	return appdb, nil
 }
 
 func (db *appdbimpl) Ping() error {
 	return db.c.Ping()
+}
+
+func dropAllTables(db *sql.DB) error {
+	_, err := db.Exec(`
+        DROP TABLE IF EXISTS reactions;
+        DROP TABLE IF EXISTS messages;
+        DROP TABLE IF EXISTS group_members;
+        DROP TABLE IF EXISTS groups;
+        DROP TABLE IF EXISTS conversations;
+        DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS conversation_participants;
+    `)
+	return err
 }

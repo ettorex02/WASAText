@@ -119,12 +119,16 @@ components:
     Message:
       type: object
       description: A message in a conversation
-      required: [id, sender, timestamp, content, mediaType, isForwarded]
+      required: [id, conversation_id, sender, timestamp, content, mediaType, isForwarded]
       properties:
         id:
           type: integer
           description: Unique message identifier
           example: 789
+        conversation_id:
+          type: integer
+          description: Conversation to which this message belongs
+          example: 123
         content:
           type: string
           minLength: 1
@@ -161,22 +165,21 @@ components:
 
     Conversation:
       type: object
-      description: A conversation between users
-      required: [id, participants]
+      description: A conversation between two users
+      required: [id, user1_id, user2_id]
       properties:
         id:
           type: integer
           description: Unique conversation identifier
           example: 123
-        lastMessage:
-          $ref: '#/components/schemas/Message'
-        participants:
-          type: array
-          minItems: 1
-          maxItems: 100
-          description: List of participants in the conversation
-          items:
-            $ref: '#/components/schemas/User'
+        user1_id:
+          type: integer
+          description: First user id
+          example: 1
+        user2_id:
+          type: integer
+          description: Second user id
+          example: 2
 
     Group:
       type: object

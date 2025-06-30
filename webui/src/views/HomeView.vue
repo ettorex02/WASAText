@@ -23,6 +23,7 @@
                         v-for="user in searchResults"
                         :key="user.username"
                         class="dropdown-item d-flex align-items-center"
+                        @mousedown.prevent="startConversation(user)"
                     >
                         <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2" />
                         <span>{{ user.username }}</span>
@@ -49,7 +50,7 @@
 
 <script>
 export default {
-    data: function() {
+    data() {
         return {
             errormsg: null,
             loading: false,
@@ -57,7 +58,8 @@ export default {
             successMsg: null,
             search: "",
             searchResults: [],
-            dropdownOpen: false
+            dropdownOpen: false,
+            openConversationId: null,
         }
     },
     methods: {
@@ -101,6 +103,28 @@ export default {
         },
         closeDropdown() {
             setTimeout(() => { this.dropdownOpen = false; }, 150);
+        },
+        async startConversation(user) {
+            const userId = localStorage.getItem("userId"); // chi ha cercato
+            console.log("Utente loggato (chi cerca):", userId);
+            console.log("Utente selezionato dalla ricerca:", user);
+
+            const res = await fetch("http://localhost:3000/conversations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: userId },
+                body: JSON.stringify({ userId: user.id })
+            });
+            const data = await res.json();
+            console.log("Risposta backend creazione conversazione:", data);
+
+            if (res.ok && data.conversationId) {
+                this.search = "";
+                this.searchResults = [];
+                this.dropdownOpen = false;
+            } else {
+                // Rimuovo l'alert fastidioso, mostro solo in console
+                console.log("Errore nella creazione della conversazione:", data.message || data);
+            }
         }
     },
     mounted() {

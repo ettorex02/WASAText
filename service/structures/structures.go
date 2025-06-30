@@ -14,20 +14,21 @@ type Reaction struct {
 }
 
 type Message struct {
-	ID          int        `json:"id"`
-	Content     string     `json:"content"`
-	IsForwarded bool       `json:"isForwarded"`
-	MediaType   string     `json:"mediaType"`
-	Reactions   []Reaction `json:"reactions"`
-	Sender      User       `json:"sender"`
-	Status      string     `json:"status"`
-	Timestamp   string     `json:"timestamp"`
+	ID             int        `json:"id"`
+	ConversationID int        `json:"conversation_id"`
+	Content        string     `json:"content"`
+	IsForwarded    bool       `json:"isForwarded"`
+	MediaType      string     `json:"mediaType"`
+	Reactions      []Reaction `json:"reactions"`
+	Sender         User       `json:"sender"`
+	Status         string     `json:"status"`
+	Timestamp      string     `json:"timestamp"`
 }
 
 type Conversation struct {
-	ID           int     `json:"id"`
-	LastMessage  Message `json:"lastMessage"`
-	Participants []User  `json:"participants"`
+	ID      int `json:"id"`
+	User1ID int `json:"user1_id"`
+	User2ID int `json:"user2_id"`
 }
 
 type Group struct {
