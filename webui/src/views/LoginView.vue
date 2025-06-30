@@ -50,7 +50,7 @@ export default {
         ? { name: this.name, displayName: this.displayName, profilePicture: this.profilePicture }
         : { name: this.name };
       try {
-        const res = await fetch("http://localhost:3000/session", {
+        const res = await fetch(`${__API_URL__}/session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

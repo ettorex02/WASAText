@@ -89,7 +89,7 @@ export default {
             }
             const userId = localStorage.getItem("userId");
             const myUsername = localStorage.getItem("username");
-            const res = await fetch(`http://localhost:3000/search/users?q=${encodeURIComponent(this.search)}`, {
+            const res = await fetch(`${__API_URL__}/search/users?q=${encodeURIComponent(this.search)}`, {
                 headers: { Authorization: userId }
             });
             if (res.ok) {
@@ -109,7 +109,7 @@ export default {
             console.log("Utente loggato (chi cerca):", userId);
             console.log("Utente selezionato dalla ricerca:", user);
 
-            const res = await fetch("http://localhost:3000/conversations", {
+            const res = await fetch(`${__API_URL__}/conversations`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: userId },
                 body: JSON.stringify({ userId: user.id })
