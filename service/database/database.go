@@ -48,6 +48,11 @@ type AppDatabase interface {
 	SetMyUserNameById(userId, newUsername string) error
 	SearchUsers(query string) ([]*structures.User, error)
 	CreateConversation(user1, user2 int) (int64, error)
+	// Messaggi
+	SendMessage(conversationId, senderId int, content, mediaType string, isForwarded bool) ([]*structures.Message, error)
+	GetMessages(conversationId int) ([]*structures.Message, error)
+	// Restituisce tutte le conversazioni di un utente con anteprima ultimo messaggio
+	GetUserConversations(userId int) ([]*structures.ConversationPreview, error)
 }
 
 type appdbimpl struct {
@@ -62,9 +67,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// SOLO PER SVILUPPO: elimina tutte le tabelle esistenti
-	if err := dropAllTables(db); err != nil {
-		return nil, fmt.Errorf("error dropping tables: %w", err)
-	}
+	// if err := dropAllTables(db); err != nil {
+	// 	return nil, fmt.Errorf("error dropping tables: %w", err)
+	// }
 
 	// Check if the main table exists. If not, the database is empty, and we need to create the structure
 	var tableName string

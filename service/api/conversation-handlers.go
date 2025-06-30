@@ -37,3 +37,24 @@ func (rt *_router) CreateConversationHandler(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"conversationId": convID})
 }
+
+// GET /conversations
+func (rt *_router) GetUserConversationsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	if !checkAuthorization(w, r) {
+		return
+	}
+	userId, err := strconv.Atoi(r.Header.Get("Authorization"))
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"})
+		return
+	}
+	convs, err := rt.db.GetUserConversations(userId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Errore recupero conversazioni"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(convs)
+}

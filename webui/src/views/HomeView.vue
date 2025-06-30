@@ -1,7 +1,7 @@
 <template>
-    <div class="d-flex" style="min-height: 100vh;">
+    <div class="d-flex" style="height: 100vh;">
         <!-- Sidebar -->
-        <div class="bg-light p-3" style="width: 420px; border-right: 0; box-sizing: border-box;">
+        <div class="bg-light p-3" style="width: 350px; min-width: 250px; max-width: 420px; border-right: 0; box-sizing: border-box;">
             <!-- Barra di ricerca utenti con dropdown Bootstrap -->
             <div class="dropdown w-100">
                 <input
@@ -30,6 +30,29 @@
                     </li>
                 </ul>
             </div>
+
+            <!-- Qui la lista delle conversazioni -->
+            <ul class="list-group mt-3">
+                <li
+                    v-for="conv in conversations"
+                    :key="conv.id"
+                    class="list-group-item list-group-item-action d-flex align-items-center"
+                    :class="{ 'selected-conv': openConversation && openConversation.id === conv.id }"
+                    @click="openConv(conv)"
+                    style="cursor:pointer;"
+                >
+                    <img :src="conv.profilePicture" alt="profile" width="40" class="rounded-circle me-2" />
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">{{ conv.username }}</div>
+                        <div class="text-muted small">
+                            {{ conv.lastMessage }}
+                        </div>
+                    </div>
+                    <div class="text-end small text-muted ms-2">
+                        {{ conv.lastMessageTime }}
+                    </div>
+                </li>
+            </ul>
         </div>
 
         <!-- Main content -->
@@ -44,6 +67,35 @@
             </div>
 
             <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
+
+            <!-- Main content -->
+            <div class="flex-grow-1 d-flex flex-column justify-content-center" style="height: 100vh;">
+                <div
+                    v-if="openConversation"
+                    class="chat-box d-flex flex-column"
+                >
+                    <div class="border-bottom p-3 rounded-top bg-white">
+                        <h5 class="mb-0">{{ openConversation.username }}</h5>
+                    </div>
+                    <!-- Sezione messaggi scrollabile -->
+                    <div class="flex-grow-1 overflow-auto p-3 messages-area">
+                        <div v-for="msg in messages" :key="msg.id" :class="{'text-end': msg.sender.id == userId}">
+                            <div :class="msg.sender.id == userId ? 'bg-primary text-white d-inline-block p-2 rounded mb-2' : 'bg-light d-inline-block p-2 rounded mb-2'">
+                                {{ msg.content }}
+                                <div class="small text-muted">{{ msg.timestamp }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Barra invio messaggi SEMPRE visibile in basso -->
+                    <form @submit.prevent="sendMessage" class="d-flex border-top p-3 bg-white rounded-bottom">
+                        <input v-model="newMessage" class="form-control me-2" placeholder="Scrivi un messaggio..." required />
+                        <button class="btn btn-primary" type="submit">Invia</button>
+                    </form>
+                </div>
+                <div v-else class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+                    Seleziona una conversazione
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -60,6 +112,12 @@ export default {
             searchResults: [],
             dropdownOpen: false,
             openConversationId: null,
+            conversations: [],
+            polling: null,
+            openConversation: null, // oggetto conversazione selezionata
+            messages: [],
+            messagesPolling: null,
+            newMessage: "",
         }
     },
     methods: {
@@ -121,21 +179,92 @@ export default {
                 this.search = "";
                 this.searchResults = [];
                 this.dropdownOpen = false;
+                await this.loadConversations(); // aggiorna subito la lista
             } else {
                 // Rimuovo l'alert fastidioso, mostro solo in console
                 console.log("Errore nella creazione della conversazione:", data.message || data);
             }
-        }
+        },
+        async loadConversations() {
+            const userId = localStorage.getItem("userId");
+            const res = await fetch(`${__API_URL__}/conversations`, {
+                headers: { Authorization: userId }
+            });
+            if (res.ok) {
+                this.conversations = await res.json();
+                // Se non c'è una conversazione aperta, apri la prima
+                if (!this.openConversation && this.conversations.length > 0) {
+                    this.openConv(this.conversations[0]);
+                }
+            } else {
+                this.conversations = [];
+            }
+        },
+        async openConv(conv) {
+            this.openConversation = conv;
+            await this.loadMessages(conv.id);
+            // RIMUOVI il setInterval per messagesPolling!
+        },
+        async loadMessages(conversationId) {
+            const userId = localStorage.getItem("userId");
+            const res = await fetch(`${__API_URL__}/conversations/${conversationId}/messages`, {
+                headers: { Authorization: userId }
+            });
+            if (res.ok) {
+                this.messages = await res.json();
+            } else {
+                this.messages = [];
+            }
+        },
+        async sendMessage() {
+            if (!this.newMessage.trim() || !this.openConversation) return;
+            const userId = localStorage.getItem("userId");
+            const res = await fetch(`${__API_URL__}/conversations/${this.openConversation.id}/messages`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: userId },
+                body: JSON.stringify({ content: this.newMessage, mediaType: "text", isForwarded: false })
+            });
+            if (res.ok) {
+                this.newMessage = "";
+                this.messages = await res.json();
+            }
+        },
     },
     mounted() {
-        this.refresh();
+        this.loadConversations();
+        this.polling = setInterval(this.loadConversations, 1500); // polling ogni 1.5 secondi
         if (this.$route.query.msg) {
             this.successMsg = this.$route.query.msg;
             this.$router.replace({ path: this.$route.path, query: {} });
         }
+    },
+    beforeUnmount() {
+        clearInterval(this.polling);
+        // RIMUOVI clearInterval(this.messagesPolling);
     }
 }
 </script>
 
 <style>
+.selected-conv {
+    background: rgba(0, 123, 255, 0.15) !important;
+}
+
+.chat-box {
+    width: 100%;
+    height: 90vh;
+    min-height: 500px;
+    background: #f8f9fa;
+    border-radius: 24px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.messages-area {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: #f8f9fa;
+}
 </style>

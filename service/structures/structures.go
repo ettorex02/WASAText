@@ -42,3 +42,12 @@ type SessionRequest struct {
 	DisplayName    string `json:"displayName,omitempty"`
 	ProfilePicture string `json:"profilePicture,omitempty"`
 }
+
+type ConversationPreview struct {
+	ID              int    `json:"id"`
+	OtherUserID     int    `json:"otherUserId"`
+	Username        string `json:"username"`
+	ProfilePicture  string `json:"profilePicture"`
+	LastMessage     string `json:"lastMessage"`
+	LastMessageTime string `json:"lastMessageTime"`
+}
