@@ -84,7 +84,15 @@ func (db *appdbimpl) GetUserById(userId string) (*structures.User, error) {
 
 // SetMyUserNameById aggiorna lo username dell'utente dato il suo ID
 func (db *appdbimpl) SetMyUserNameById(userId, newUsername string) error {
-	_, err := db.c.Exec(`UPDATE users SET username = ? WHERE id = ?`, newUsername, userId)
+	// Usa CheckUserExistence per vedere se lo username è già preso da altri
+	exists, err := db.CheckUserExistence(newUsername)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("username già in uso")
+	}
+	_, err = db.c.Exec(`UPDATE users SET username = ? WHERE id = ?`, newUsername, userId)
 	return err
 }
 

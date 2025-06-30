@@ -75,7 +75,7 @@ func (rt *_router) SetMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 	if err := rt.db.SetMyUserNameById(userId, req.NewName); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiornamento username"})
+		json.NewEncoder(w).Encode(map[string]string{"message": "Useraname già in uso"})
 		return
 	}
 	user, _ := rt.db.GetUserById(userId)

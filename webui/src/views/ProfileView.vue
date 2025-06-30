@@ -101,6 +101,12 @@ export default {
         this.error = true;
         return;
       }
+      // Controllo frontend: non permettere di inserire lo stesso username
+      if (this.newUsername === this.user.username) {
+        this.message = "Hai già questo username";
+        this.error = true;
+        return;
+      }
       const userId = localStorage.getItem("userId");
       const res = await fetch(`${__API_URL__}/users/${userId}`, {
         method: "PATCH",
