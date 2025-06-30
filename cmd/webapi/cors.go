@@ -23,7 +23,7 @@ func applyCORSHandler(h http.Handler) http.Handler {
 		// Se vuoi permettere solo il frontend in sviluppo, usa:
 		// handlers.AllowedOrigins([]string{"http://localhost:5173"}),
 		// Altrimenti "*" permette tutte le origini (non sicuro in produzione)
-		handlers.AllowedOrigins([]string{"http://localhost:5173"}),
+		handlers.AllowedOrigins([]string{"*"}),
 		handlers.MaxAge(1),
 	)(h)
 }
