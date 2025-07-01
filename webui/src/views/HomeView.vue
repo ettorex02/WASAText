@@ -86,6 +86,9 @@
                             <div>
                                 <div :class="isMyMessage(msg) ? 'msg-sent' : 'msg-received'"
                                     style="font-size: 1.3rem; max-width: 520px; word-break: break-word;">
+                                    <span v-if="msg.is_forwarded || msg.isForwarded" class="badge bg-warning text-dark mb-1" style="font-size: 0.9rem;">
+                                        Inoltrato
+                                    </span>
                                     {{ msg.content }}
                                     <div class="small text-muted mt-1 d-flex align-items-center">
                                         <span>{{ msg.timestamp }}</span>
@@ -94,6 +97,13 @@
                                         </span>
                                         <button v-if="isMyMessage(msg)" @click="deleteMessage(msg)" class="btn btn-sm btn-link text-danger ms-2" title="Elimina">
                                             🗑️
+                                        </button>
+                                        <button
+                                          @click="openForwardModal(msg)"
+                                          class="btn btn-sm btn-link text-primary ms-2"
+                                          title="Inoltra"
+                                        >
+                                          ⏩
                                         </button>
                                     </div>
                                 </div>
@@ -110,6 +120,28 @@
                     Nessuna conversazione trovata. Inizia a cercare utenti per iniziare una chat!
                 </div>
             </div>
+        </div>
+
+        <!-- Modal per inoltrare messaggio -->
+        <div v-if="forwardModalOpen" class="modal-backdrop">
+          <div class="modal-dialog">
+            <div class="modal-content p-3">
+              <h5>Scegli la chat dove inoltrare</h5>
+              <ul class="list-group">
+                <li
+                  v-for="conv in conversations"
+                  :key="conv.id"
+                  class="list-group-item list-group-item-action"
+                  @click="forwardMessageTo(conv.id)"
+                  style="cursor:pointer;"
+                >
+                  <img :src="conv.profilePicture" alt="profile" width="32" class="rounded-circle me-2" />
+                  {{ conv.username }}
+                </li>
+              </ul>
+              <button class="btn btn-secondary mt-3" @click="closeForwardModal">Annulla</button>
+            </div>
+          </div>
         </div>
     </div>
 </template>
@@ -132,6 +164,8 @@ export default {
             messages: [],
             messagesPolling: null,
             newMessage: "",
+            forwardModalOpen: false,
+            forwardMsg: null,
         }
     },
     methods: {
@@ -285,6 +319,32 @@ export default {
         getStatusClass(status) {
             if (status === "read") return "text-primary";
             return "text-secondary";
+        },
+        openForwardModal(msg) {
+          this.forwardMsg = msg;
+          this.forwardModalOpen = true;
+        },
+        closeForwardModal() {
+          this.forwardMsg = null;
+          this.forwardModalOpen = false;
+        },
+        async forwardMessageTo(targetConversationId) {
+          if (!this.forwardMsg) return;
+          const userId = localStorage.getItem("userId");
+          const res = await fetch(
+            `${__API_URL__}/conversations/${this.forwardMsg.conversation_id}/messages/${this.forwardMsg.id}/forward`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: userId },
+              body: JSON.stringify({ targetConversationId }),
+            }
+          );
+          if (res.ok) {
+            this.successMsg = "Messaggio inoltrato!";
+            this.closeForwardModal();
+          } else {
+            alert("Errore durante l'inoltro del messaggio.");
+          }
         }
     },
     mounted() {
@@ -337,5 +397,20 @@ export default {
     display: inline-block;
     padding: 1rem;
     border-radius: 1.5rem;
+}
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-dialog {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
 }
 </style>

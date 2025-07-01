@@ -56,6 +56,7 @@ type AppDatabase interface {
 	SetMessagesReceived(conversationId int, userId int) error
 	SetMessagesRead(conversationId int, userId int) error
 	DeleteMessage(conversationId int, messageId int, userId int) error
+	GetMessageById(conversationId, messageId int) (*structures.Message, error)
 }
 
 type appdbimpl struct {

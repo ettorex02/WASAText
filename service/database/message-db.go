@@ -83,3 +83,30 @@ func (db *appdbimpl) DeleteMessage(conversationId, messageId, userId int) error 
 	}
 	return nil
 }
+
+// GetMessageById restituisce un messaggio specifico di una conversazione
+func (db *appdbimpl) GetMessageById(conversationId, messageId int) (*structures.Message, error) {
+	rows, err := db.c.Query(
+		`SELECT m.id, m.conversation_id, m.sender_id, m.content, m.is_forwarded, m.media_type, m.status, m.timestamp,
+                u.username, u.display_name, u.profile_picture
+         FROM messages m
+         JOIN users u ON m.sender_id = u.id
+         WHERE m.conversation_id = ? AND m.id = ?`, conversationId, messageId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var msg structures.Message
+		var sender structures.User
+		if err := rows.Scan(
+			&msg.ID, &msg.ConversationID, &sender.ID, &msg.Content, &msg.IsForwarded, &msg.MediaType, &msg.Status, &msg.Timestamp,
+			&sender.Username, &sender.DisplayName, &sender.ProfilePicture,
+		); err != nil {
+			return nil, err
+		}
+		msg.Sender = sender
+		return &msg, nil
+	}
+	return nil, fmt.Errorf("messaggio non trovato")
+}
