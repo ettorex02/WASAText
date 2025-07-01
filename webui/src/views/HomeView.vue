@@ -313,8 +313,7 @@ export default {
         },
         getStatusIcon(status) {
             if (status === "read") return "✔✔✔";      // Tre spunte blu
-            if (status === "received") return "✔✔";   // Due spunte grigie
-            return "✔";                               // Una spunta grigia
+            return "✔✔";                              // Due spunte grigie per tutto il resto
         },
         getStatusClass(status) {
             if (status === "read") return "text-primary";

@@ -71,9 +71,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// SOLO PER SVILUPPO: elimina tutte le tabelle esistenti
-	// if err := dropAllTables(db); err != nil {
-	// 	return nil, fmt.Errorf("error dropping tables: %w", err)
-	// }
+	if err := dropAllTables(db); err != nil {
+		return nil, fmt.Errorf("error dropping tables: %w", err)
+	}
 
 	// Check if the main table exists. If not, the database is empty, and we need to create the structure
 	var tableName string
@@ -112,7 +112,7 @@ func New(db *sql.DB) (AppDatabase, error) {
                 content TEXT NOT NULL,
                 is_forwarded BOOLEAN NOT NULL DEFAULT 0,
                 media_type TEXT NOT NULL,
-                status TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status IN ('received', 'read')),
                 timestamp DATETIME NOT NULL,
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE

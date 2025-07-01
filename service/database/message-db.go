@@ -9,10 +9,11 @@ import (
 
 // SendMessage inserisce un nuovo messaggio e restituisce la lista aggiornata dei messaggi della conversazione
 func (db *appdbimpl) SendMessage(conversationId, senderId int, content, mediaType string, isForwarded bool) ([]*structures.Message, error) {
+	status := "received"
 	_, err := db.c.Exec(
 		`INSERT INTO messages (conversation_id, sender_id, content, is_forwarded, media_type, status, timestamp)
-         VALUES (?, ?, ?, ?, ?, 'sent', ?)`,
-		conversationId, senderId, content, isForwarded, mediaType, globaltime.Now().Format("2006-01-02 15:04:05"),
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		conversationId, senderId, content, isForwarded, mediaType, status, globaltime.Now().Format("2006-01-02 15:04:05"),
 	)
 	if err != nil {
 		return nil, err
