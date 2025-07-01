@@ -21,6 +21,9 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.PATCH("/conversations/:id/messages/read", rt.SetMessagesReadHandler)
 	rt.router.DELETE("/conversations/:id/messages/:messageId", rt.DeleteMessageHandler)
 	rt.router.POST("/conversations/:id/messages/:messageId/forward", rt.ForwardMessageHandler)
+	rt.router.POST("/conversations/:id/messages/:messageId/reactions", rt.AddReactionHandler)
+	rt.router.DELETE("/conversations/:id/messages/:messageId/reactions", rt.RemoveReactionHandler)
+	rt.router.GET("/conversations/:id/messages/:messageId/reactions", rt.GetReactionsHandler)
 
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)

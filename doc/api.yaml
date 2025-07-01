@@ -555,6 +555,29 @@ paths:
         required: true
         schema:
           type: integer
+    get:
+      summary: Get reactions for a message
+      description: Retrieve all reactions for a specific message.
+      operationId: getMessageReactions
+      tags: [message]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of reactions for the message
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of reactions
+                minItems: 0
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/Reaction'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
     post:
       summary: Add a reaction
       description: Add a reaction to a message

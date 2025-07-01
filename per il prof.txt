@@ -1,0 +1,3 @@
+Professore il problema di base dovrebbe essere CGO che non faceva funzionare il database
+se non lo riesce a compilare provi ad utilizzare il docker. Se vuole compilare
+solamente il backend utilizzi CGO_ENABLED=1 go build ./cmd/webapi/

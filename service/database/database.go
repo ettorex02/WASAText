@@ -57,6 +57,9 @@ type AppDatabase interface {
 	SetMessagesRead(conversationId int, userId int) error
 	DeleteMessage(conversationId int, messageId int, userId int) error
 	GetMessageById(conversationId, messageId int) (*structures.Message, error)
+	AddReaction(messageId int, userId int, emoji string) error
+	RemoveReaction(messageId int, userId int) error
+	GetReactions(messageId int) ([]*structures.Reaction, error)
 }
 
 type appdbimpl struct {
@@ -118,10 +121,10 @@ func New(db *sql.DB) (AppDatabase, error) {
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
             );`,
 			`CREATE TABLE IF NOT EXISTS reactions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 message_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL,
                 emoji TEXT NOT NULL,
+                PRIMARY KEY (message_id, user_id),
                 FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );`,

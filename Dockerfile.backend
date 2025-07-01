@@ -1,0 +1,30 @@
+# Usa un'immagine base ufficiale di Go per la build
+FROM golang:1.17 AS builder
+
+RUN mkdir -p /app
+
+# Copia il resto del codice sorgente
+COPY /service /app/service
+COPY /cmd /app/cmd
+COPY /vendor /app/vendor
+COPY /go.mod /app/go.mod
+COPY /go.sum /app/go.sum
+
+WORKDIR /app
+
+# Compila l'applicazione
+RUN CGO_ENABLED=1 go build ./cmd/webapi/ 
+
+# Usa una piccola immagine per il runtime
+FROM golang:1.17
+
+WORKDIR /app
+
+# Copia il binario compilato dalla fase di build
+COPY --from=builder /app/webapi .
+
+# Espone la porta su cui gira il backend (modifica se necessario)
+EXPOSE 3000
+
+# Comando di avvio
+CMD ["./webapi"]

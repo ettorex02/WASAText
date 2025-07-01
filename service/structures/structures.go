@@ -8,9 +8,10 @@ type User struct {
 }
 
 type Reaction struct {
-	ID    int    `json:"id"`
-	Emoji string `json:"emoji"`
-	User  User   `json:"user"`
+	MessageId int    `json:"messageId"`
+	UserId    int    `json:"userId"`
+	Emoji     string `json:"emoji"`
+	User      User   `json:"user"`
 }
 
 type Message struct {

@@ -107,6 +107,12 @@
                                         </button>
                                     </div>
                                 </div>
+                                <!-- Aggiungi dopo i bottoni elimina/inoltra -->
+                                <MessageReactions
+                                  :message="msg"
+                                  :conversationId="openConversation.id"
+                                  @refresh="loadMessages(openConversation.id)"
+                                />
                             </div>
                         </div>
                     </div>
@@ -147,7 +153,10 @@
 </template>
 
 <script>
+import MessageReactions from '@/components/MessageReactions.vue';
+
 export default {
+  components: { MessageReactions },
     data() {
         return {
             errormsg: null,
@@ -266,7 +275,18 @@ export default {
                 headers: { Authorization: userId }
             });
             if (res.ok) {
-                this.messages = await res.json();
+                const msgs = await res.json();
+                
+                // Carica le reazioni per ogni messaggio
+                for (const msg of msgs) {
+                    const reactionRes = await fetch(
+                        `${__API_URL__}/conversations/${conversationId}/messages/${msg.id}/reactions`, 
+                        { headers: { Authorization: userId } }
+                    );
+                    msg.reactions = reactionRes.ok ? await reactionRes.json() : [];
+                }
+                
+                this.messages = msgs;
             } else {
                 this.messages = [];
             }
