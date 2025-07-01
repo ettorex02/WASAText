@@ -108,3 +108,39 @@ func (rt *_router) SetMessagesReadHandler(w http.ResponseWriter, r *http.Request
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// DELETE /conversations/:id/messages/:messageId
+func (rt *_router) DeleteMessageHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if !checkAuthorization(w, r) {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		return
+	}
+	conversationId, err := strconv.Atoi(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"})
+		return
+	}
+	messageId, err := strconv.Atoi(ps.ByName("messageId"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"})
+		return
+	}
+	userIdStr := r.Header.Get("Authorization")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		return
+	}
+	// Solo il mittente può eliminare il proprio messaggio
+	err = rt.db.DeleteMessage(conversationId, messageId, userId)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Non autorizzato o errore eliminazione"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

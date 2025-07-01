@@ -1,6 +1,8 @@
 package database
 
 import (
+	"fmt"
+
 	"github.com/ettorex02/WASAText/service/globaltime"
 	"github.com/ettorex02/WASAText/service/structures"
 )
@@ -64,4 +66,20 @@ func (db *appdbimpl) SetMessagesRead(conversationId int, userId int) error {
         SET status = 'read'
         WHERE conversation_id = ? AND sender_id != ? AND status != 'read'`, conversationId, userId)
 	return err
+}
+
+// DeleteMessage rimuove un messaggio da una conversazione se l'utente è il mittente
+func (db *appdbimpl) DeleteMessage(conversationId, messageId, userId int) error {
+	res, err := db.c.Exec(
+		`DELETE FROM messages WHERE id = ? AND conversation_id = ? AND sender_id = ?`,
+		messageId, conversationId, userId,
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil || affected == 0 {
+		return fmt.Errorf("not authorized or message not found")
+	}
+	return nil
 }

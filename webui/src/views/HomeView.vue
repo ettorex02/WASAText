@@ -92,6 +92,9 @@
                                         <span v-if="isMyMessage(msg)" :class="getStatusClass(msg.status)" style="margin-left: 8px;">
                                             {{ getStatusIcon(msg.status) }}
                                         </span>
+                                        <button v-if="isMyMessage(msg)" @click="deleteMessage(msg)" class="btn btn-sm btn-link text-danger ms-2" title="Elimina">
+                                            🗑️
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -254,6 +257,20 @@ export default {
                 method: "PATCH",
                 headers: { Authorization: userId }
             });
+        },
+        async deleteMessage(msg) {
+            if (!confirm("Sei sicuro di voler eliminare questo messaggio?")) return;
+            const userId = localStorage.getItem("userId");
+            const res = await fetch(`${__API_URL__}/conversations/${msg.conversation_id}/messages/${msg.id}`, {
+                method: "DELETE",
+                headers: { Authorization: userId }
+            });
+            if (res.ok) {
+                // Aggiorna la lista (il polling farà il resto, ma puoi anche rimuovere subito il messaggio)
+                this.messages = this.messages.filter(m => m.id !== msg.id);
+            } else {
+                alert("Errore durante l'eliminazione del messaggio.");
+            }
         },
         isMyMessage(msg) {
             const myId = localStorage.getItem("userId");
