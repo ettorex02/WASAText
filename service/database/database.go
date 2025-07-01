@@ -71,9 +71,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// SOLO PER SVILUPPO: elimina tutte le tabelle esistenti
-	if err := dropAllTables(db); err != nil {
-		return nil, fmt.Errorf("error dropping tables: %w", err)
-	}
+	//if err := dropAllTables(db); err != nil {
+	//return nil, fmt.Errorf("error dropping tables: %w", err)
+	//}
 
 	// Check if the main table exists. If not, the database is empty, and we need to create the structure
 	var tableName string

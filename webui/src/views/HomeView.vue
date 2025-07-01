@@ -339,7 +339,10 @@ export default {
             }
           );
           if (res.ok) {
+            // Rimuovi il messaggio inoltrato dalla chat corrente
+            this.messages = this.messages.filter(m => m.id !== this.forwardMsg.id);
             this.successMsg = "Messaggio inoltrato!";
+            setTimeout(() => { this.successMsg = null; }, 1000); // Nasconde il messaggio dopo 2 secondi
             this.closeForwardModal();
           } else {
             alert("Errore durante l'inoltro del messaggio.");
