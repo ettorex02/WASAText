@@ -16,13 +16,14 @@ func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, _ httprout
 	var req struct {
 		Name    string   `json:"name"`
 		Members []string `json:"members"`
+		Photo   string   `json:"photo"` // aggiungi questo campo
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" || len(req.Members) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Dati gruppo non validi"})
 		return
 	}
-	group, err := rt.db.AddToGroup(req.Name, req.Members)
+	group, err := rt.db.AddToGroup(req.Name, req.Photo, req.Members)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})

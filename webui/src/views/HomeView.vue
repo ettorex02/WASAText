@@ -506,7 +506,13 @@ export default {
           }
           try {
             const userId = localStorage.getItem("userId");
-            const membersArr = this.groupMembers.map(u => u.username);
+            const myUsername = localStorage.getItem("username");
+            // Prendi tutti gli username selezionati
+            let membersArr = this.groupMembers.map(u => u.username);
+            // Aggiungi il creatore se non già presente
+            if (!membersArr.includes(myUsername)) {
+              membersArr.push(myUsername);
+            }
             const body = {
               name: this.newGroupName,
               members: membersArr

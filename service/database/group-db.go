@@ -7,14 +7,14 @@ import (
 )
 
 // addToGroup: crea un nuovo gruppo con nome e membri (usernames)
-func (db *appdbimpl) AddToGroup(name string, usernames []string) (*structures.Group, error) {
+func (db *appdbimpl) AddToGroup(name string, photo string, usernames []string) (*structures.Group, error) {
 	tx, err := db.c.Begin()
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec(`INSERT INTO groups (name) VALUES (?)`, name)
+	res, err := tx.Exec(`INSERT INTO groups (name, photo) VALUES (?, ?)`, name, photo)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (db *appdbimpl) AddToGroup(name string, usernames []string) (*structures.Gr
 	return &structures.Group{
 		ID:      groupID,
 		Name:    name,
-		Photo:   "",
+		Photo:   photo,
 		Members: members,
 	}, nil
 }

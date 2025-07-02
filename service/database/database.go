@@ -62,8 +62,8 @@ type AppDatabase interface {
 	RemoveReaction(messageId int, userId int) error
 	GetReactions(messageId int) ([]*structures.Reaction, error)
 	// Gruppi
-	AddToGroup(name string, usernames []string) (*structures.Group, error) // operationId: addToGroup
-	ListGroups(userID int) ([]*structures.Group, error)                    // operationId: listGroups
+	AddToGroup(name string, photo string, usernames []string) (*structures.Group, error) // operationId: addToGroup
+	ListGroups(userID int) ([]*structures.Group, error)                                  // operationId: listGroups
 
 }
 
