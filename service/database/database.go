@@ -57,9 +57,14 @@ type AppDatabase interface {
 	SetMessagesRead(conversationId int, userId int) error
 	DeleteMessage(conversationId int, messageId int, userId int) error
 	GetMessageById(conversationId, messageId int) (*structures.Message, error)
+	// Reazioni
 	AddReaction(messageId int, userId int, emoji string) error
 	RemoveReaction(messageId int, userId int) error
 	GetReactions(messageId int) ([]*structures.Reaction, error)
+	// Gruppi
+	AddToGroup(name string, usernames []string) (*structures.Group, error) // operationId: addToGroup
+	ListGroups(userID int) ([]*structures.Group, error)                    // operationId: listGroups
+
 }
 
 type appdbimpl struct {
@@ -91,7 +96,8 @@ func New(db *sql.DB) (AppDatabase, error) {
             );`,
 			`CREATE TABLE IF NOT EXISTS groups (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL
+                name TEXT NOT NULL,
+                photo TEXT
             );`,
 			`CREATE TABLE IF NOT EXISTS group_members (
                 group_id INTEGER NOT NULL,

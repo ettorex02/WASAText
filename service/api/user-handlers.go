@@ -7,18 +7,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// Funzione privata per controllo Authorization
-func checkAuthorization(w http.ResponseWriter, r *http.Request) bool {
-	auth := r.Header.Get("Authorization")
-	if auth == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Non autorizzato"})
-		return false
-	}
-	return true
-}
-
 func (rt *_router) GetUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return

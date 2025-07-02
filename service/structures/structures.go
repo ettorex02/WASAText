@@ -35,6 +35,7 @@ type Conversation struct {
 type Group struct {
 	ID      int    `json:"id"`
 	Name    string `json:"name"`
+	Photo   string `json:"photo"`
 	Members []User `json:"members"`
 }
 

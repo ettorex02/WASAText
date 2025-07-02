@@ -53,6 +53,81 @@
                     </div>
                 </li>
             </ul>
+
+            <!-- In fondo alla sidebar, subito dopo </ul> -->
+            <section class="create-group-section mt-4">
+              <hr />
+              <button class="btn btn-success w-100" @click="openCreateGroupModal = true">
+                + Create Group
+              </button>
+            </section>
+
+            <!-- Modale per creare gruppo -->
+            <div v-if="openCreateGroupModal" class="modal-backdrop">
+              <div class="modal-dialog">
+                <div class="modal-content p-4">
+                  <h5>Crea nuovo gruppo</h5>
+                  <form @submit.prevent="submitGroup">
+                    <div class="mb-3">
+                      <label class="form-label">Nome gruppo</label>
+                      <input v-model="newGroupName" class="form-control" required minlength="3" maxlength="16" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">URL foto gruppo (opzionale)</label>
+                      <input v-model="newGroupPhoto" class="form-control" placeholder="https://..." />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Aggiungi membri</label>
+                      <!-- Barra di ricerca utenti identica a quella già presente -->
+                      <div class="dropdown w-100">
+                        <input
+                          v-model="searchUser"
+                          @input="searchUsersGroup"
+                          class="form-control mb-2 dropdown-toggle"
+                          placeholder="Cerca utenti per username..."
+                          autocomplete="off"
+                          data-bs-toggle="dropdown"
+                          @focus="dropdownOpenGroup = true"
+                          @blur="closeDropdownGroup"
+                        />
+                        <ul
+                          class="dropdown-menu w-100"
+                          :class="{ show: dropdownOpenGroup && searchResultsGroup.length }"
+                          style="max-height: 200px; overflow-y: auto;"
+                        >
+                          <li
+                            v-for="user in searchResultsGroup"
+                            :key="user.username"
+                            class="dropdown-item d-flex align-items-center"
+                            @mousedown.prevent="addMemberToGroup(user)"
+                          >
+                            <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2" />
+                            <span>{{ user.username }}</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="mt-2">
+                        <span
+                          v-for="user in groupMembers"
+                          :key="user.username"
+                          class="badge bg-primary me-2"
+                          style="font-size:1rem;"
+                        >
+                          <img :src="user.profilePicture" alt="profile" width="20" height="20" class="rounded-circle me-1" />
+                          {{ user.username }}
+                          <span class="ms-1" style="cursor:pointer;" @click="removeMemberFromGroup(user.username)">×</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button type="button" class="btn btn-secondary" @click="closeCreateGroupModal">Annulla</button>
+                      <button type="submit" class="btn btn-primary">Crea</button>
+                    </div>
+                    <div v-if="groupError" class="alert alert-danger mt-2">{{ groupError }}</div>
+                  </form>
+                </div>
+              </div>
+            </div>
         </div>
 
         <!-- Main content -->
@@ -175,6 +250,14 @@ export default {
             newMessage: "",
             forwardModalOpen: false,
             forwardMsg: null,
+            openCreateGroupModal: false,
+            newGroupName: "",
+            newGroupPhoto: "",
+            groupMembers: [],
+            groupError: "",
+            searchUser: "",
+            searchResultsGroup: [],
+            dropdownOpenGroup: false,
         }
     },
     methods: {
@@ -259,13 +342,20 @@ export default {
         },
         async openConv(conv) {
             this.openConversation = conv;
+            this.messages = []; // <-- svuota subito!
             await this.loadMessages(conv.id);
-            await this.markMessagesRead(); // Segna come letti subito se la chat è aperta
+            await this.markMessagesRead();
+
+            // Ogni volta che cambio chat, resetto il polling dei messaggi
+            this.startMessagesPolling();
+        },
+        startMessagesPolling() {
             if (this.messagesPolling) clearInterval(this.messagesPolling);
+            if (!this.openConversation) return;
             this.messagesPolling = setInterval(async () => {
                 if (this.openConversation) {
                     await this.loadMessages(this.openConversation.id);
-                    await this.markMessagesRead(); // Segna come letti ogni volta che arrivano nuovi messaggi e la chat è aperta
+                    await this.markMessagesRead();
                 }
             }, 1000);
         },
@@ -301,7 +391,7 @@ export default {
             });
             if (res.ok) {
                 this.newMessage = "";
-                // Non aggiornare qui i messaggi, ci pensa il polling!
+                await this.loadMessages(this.openConversation.id); // <-- aggiorna subito!
             }
         },
         async markMessagesRead() {
@@ -367,11 +457,103 @@ export default {
           } else {
             alert("Errore durante l'inoltro del messaggio.");
           }
-        }
+        },
+        async searchUsersGroup() {
+          if (this.searchUser.length < 1) {
+            this.searchResultsGroup = [];
+            this.dropdownOpenGroup = false;
+            return;
+          }
+          const userId = localStorage.getItem("userId");
+          const myUsername = localStorage.getItem("username");
+          const res = await fetch(`${__API_URL__}/search/users?q=${encodeURIComponent(this.searchUser)}`, {
+            headers: { Authorization: userId }
+          });
+          if (res.ok) {
+            const results = await res.json();
+            this.searchResultsGroup = results.filter(
+              u => u.username !== myUsername && !this.groupMembers.some(m => m.username === u.username)
+            );
+            this.dropdownOpenGroup = !!this.searchResultsGroup.length;
+          } else {
+            this.searchResultsGroup = [];
+            this.dropdownOpenGroup = false;
+          }
+        },
+        closeDropdownGroup() {
+          setTimeout(() => { this.dropdownOpenGroup = false; }, 150);
+        },
+        addMemberToGroup(user) {
+          if (!this.groupMembers.some(u => u.username === user.username)) {
+            this.groupMembers.push(user);
+          }
+          this.searchUser = "";
+          this.searchResultsGroup = [];
+          this.dropdownOpenGroup = false;
+        },
+        removeMemberFromGroup(username) {
+          this.groupMembers = this.groupMembers.filter(u => u.username !== username);
+        },
+        async submitGroup() {
+          this.groupError = "";
+          if (!this.newGroupName || this.newGroupName.length < 3 || this.newGroupName.length > 16) {
+            this.groupError = "Il nome deve essere tra 3 e 16 caratteri";
+            return;
+          }
+          if (this.groupMembers.length === 0) {
+            this.groupError = "Aggiungi almeno un membro";
+            return;
+          }
+          try {
+            const userId = localStorage.getItem("userId");
+            const membersArr = this.groupMembers.map(u => u.username);
+            const body = {
+              name: this.newGroupName,
+              members: membersArr
+            };
+            if (this.newGroupPhoto) body.photo = this.newGroupPhoto;
+            const res = await fetch(`${__API_URL__}/groups`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: userId
+              },
+              body: JSON.stringify(body)
+            });
+            if (res.ok) {
+              this.closeCreateGroupModal();
+              await this.loadConversations?.(); // aggiorna la lista gruppi/conversazioni
+            } else {
+              const data = await res.json();
+              this.groupError = data.message || "Errore creazione gruppo";
+            }
+          } catch (e) {
+            this.groupError = "Errore di rete";
+          }
+        },
+        closeCreateGroupModal() {
+          this.openCreateGroupModal = false;
+          this.newGroupName = "";
+          this.newGroupPhoto = "";
+          this.groupMembers = [];
+          this.groupError = "";
+          this.searchUser = "";
+          this.searchResultsGroup = [];
+          this.dropdownOpenGroup = false;
+        },
+        async loadAll() {
+            await this.loadConversations();
+            if (this.openConversation) {
+                await this.loadMessages(this.openConversation.id);
+                await this.markMessagesRead();
+            }
+            // Qui puoi aggiungere altre fetch se servono
+        },
     },
     mounted() {
-        this.loadConversations();
-        this.polling = setInterval(this.loadConversations, 1500); // polling ogni 1.5 secondi
+        this.loadAll();
+        this.polling = setInterval(this.loadAll, 1500);
+
         if (this.$route.query.msg) {
             this.successMsg = this.$route.query.msg;
             this.$router.replace({ path: this.$route.path, query: {} });
@@ -379,7 +561,6 @@ export default {
     },
     beforeUnmount() {
         clearInterval(this.polling);
-        if (this.messagesPolling) clearInterval(this.messagesPolling);
     }
 }
 </script>
@@ -434,5 +615,8 @@ export default {
   border-radius: 12px;
   max-width: 400px;
   width: 100%;
+}
+.create-group-section {
+  padding: 1rem 0 0 0;
 }
 </style>
