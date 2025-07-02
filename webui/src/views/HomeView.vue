@@ -80,7 +80,7 @@
                     <!-- Sezione messaggi scrollabile -->
                     <div class="flex-grow-1 overflow-auto p-3 messages-area">
                         <div v-for="msg in messages" :key="msg.id"
-                            class="d-flex mb-3 align-items-end"
+                            class="d-flex mb-3 align-items-center"
                             :class="isMyMessage(msg) ? '' : 'flex-row-reverse'">
                             <img :src="msg.sender.profilePicture" alt="profile" width="44" height="44" class="rounded-circle mx-2" />
                             <div>

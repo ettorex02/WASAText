@@ -1,21 +1,25 @@
 <template>
-  <div class="mt-1">
+  <div class="mt-1 d-flex align-items-center gap-2">
+    <!-- Bottone per aggiungere reazione -->
     <button 
-      class="btn btn-sm btn-light p-1" 
-      @click="modalOpen = true" 
+      class="btn btn-sm btn-light p-1"
+      @click="modalOpen = true"
       title="Aggiungi reazione"
       style="font-size: 1.2rem;"
     >
       😊
     </button>
 
-    <!-- Mostra reazioni esistenti SOLO SE CE NE SONO -->
-    <div v-if="hasReactions" class="reactions-container mt-2">
+    <!-- Reazioni accanto al bottone -->
+    <div v-if="hasReactions" class="reactions-container ms-2">
       <span
         v-for="(group, emoji) in groupedReactions"
         :key="emoji"
         class="reaction-badge"
+        :class="{ 'user-reacted': userHasReacted(group) }"
         :title="getReactionTooltip(group)"
+        @click="userHasReacted(group) ? removeReaction() : null"
+        style="cursor: pointer;"
       >
         {{ emoji }} <span class="reaction-count">{{ group.length }}</span>
       </span>
@@ -61,7 +65,6 @@ export default {
     },
     groupedReactions() {
       if (!this.hasReactions) return {};
-      
       const map = {};
       for (const reaction of this.message.reactions) {
         if (!map[reaction.emoji]) {
@@ -86,11 +89,9 @@ export default {
             body: JSON.stringify({ emoji }),
           }
         );
-        
         if (response.ok) {
-          console.log(`Reazione ${emoji} aggiunta al messaggio ${this.message.id}`);
           this.modalOpen = false;
-          this.$emit('refresh'); // Notifica al parent di aggiornare
+          this.$emit('refresh');
         } else {
           console.error('Errore nell\'aggiunta della reazione');
         }
@@ -98,15 +99,73 @@ export default {
         console.error('Errore di rete:', error);
       }
     },
+    async removeReaction() {
+      try {
+        const response = await fetch(
+          `${__API_URL__}/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
+          {
+            method: "DELETE",
+            headers: { Authorization: this.userId }
+          }
+        );
+        if (response.ok) {
+          this.$emit('refresh');
+        } else {
+          console.error('Errore nella rimozione della reazione');
+        }
+      } catch (error) {
+        console.error('Errore di rete:', error);
+      }
+    },
     getReactionTooltip(reactionGroup) {
-      // Mostra i nomi degli utenti che hanno reagito
-      return reactionGroup.map(r => r.user.displayName || r.user.username).join(', ');
+      // Mostra SOLO username degli utenti che hanno reagito
+      return reactionGroup.map(r => r.user.username).join(', ');
+    },
+    userHasReacted(reactionGroup) {
+      return reactionGroup.some(r => String(r.user.id) === this.userId);
     }
   }
 }
 </script>
 
 <style scoped>
+.mt-1.d-flex.align-items-center.gap-2 {
+  gap: 0.5rem !important;
+}
+.reactions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0;
+}
+.reaction-badge {
+  font-size: 1.1rem;
+  background: #e9ecef;
+  border-radius: 12px;
+  padding: 4px 8px;
+  display: inline-block;
+  cursor: pointer;
+  margin-right: 4px;
+  transition: background 0.2s;
+}
+.reaction-badge.user-reacted {
+  background: #d1e7fd;
+  color: #0d6efd;
+}
+.reaction-count {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-left: 2px;
+}
+.emoji-btn {
+  font-size: 2rem;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.emoji-btn:hover {
+  border-color: #007bff;
+  transform: scale(1.1);
+}
 .modal-backdrop {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -116,49 +175,11 @@ export default {
   align-items: center;
   justify-content: center;
 }
-
 .modal-dialog {
   background: #fff;
   border-radius: 12px;
   max-width: 400px;
   width: 90%;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-
-.emoji-btn {
-  font-size: 2rem;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.emoji-btn:hover {
-  border-color: #007bff;
-  transform: scale(1.1);
-}
-
-.reactions-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.reaction-badge {
-  font-size: 1.1rem;
-  background: #e9ecef;
-  border-radius: 12px;
-  padding: 4px 8px;
-  display: inline-block;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.reaction-badge:hover {
-  background: #dee2e6;
-}
-
-.reaction-count {
-  font-size: 0.9rem;
-  color: #6c757d;
-  margin-left: 2px;
 }
 </style>

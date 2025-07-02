@@ -1,0 +1,19 @@
+# Build stage
+FROM node:lts AS builder
+
+WORKDIR /app
+COPY webui webui
+
+WORKDIR /app/webui
+
+# Compila l'applicazione per la produzione
+RUN yarn build-prod
+
+# Runtime stage
+FROM nginx:stable
+
+COPY --from=builder /app/webui/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
