@@ -33,9 +33,10 @@
 
             <!-- Qui la lista delle conversazioni -->
             <ul class="list-group mt-3">
+                <!-- Conversazioni 1:1 -->
                 <li
                     v-for="conv in conversations"
-                    :key="conv.id"
+                    :key="'chat-' + conv.id"
                     class="list-group-item list-group-item-action d-flex align-items-center"
                     :class="{ 'selected-conv': openConversation && openConversation.id === conv.id }"
                     @click="openConv(conv)"
@@ -52,6 +53,27 @@
                         {{ conv.lastMessageTime }}
                     </div>
                 </li>
+                
+                <!-- Gruppi -->
+                <li
+                    v-for="group in groups"
+                    :key="'group-' + group.id"
+                    class="list-group-item list-group-item-action d-flex align-items-center"
+                    :class="{ 'selected-conv': openConversation && openConversation.id === group.id }"
+                    @click="openConv({...group, username: group.name, profilePicture: group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'})"
+                    style="cursor:pointer;"
+                >
+                    <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="40" class="rounded-circle me-2" />
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">👥 {{ group.name }}</div>
+                        <div class="text-muted small">
+                            {{ group.lastMessage && group.lastMessage.length > 12 ? group.lastMessage.slice(0, 12) + '…' : group.lastMessage }}
+                        </div>
+                    </div>
+                    <div class="text-end small text-muted ms-2">
+                        {{ group.lastMessageTime }}
+                    </div>
+                </li>
             </ul>
 
             <!-- In fondo alla sidebar, subito dopo </ul> -->
@@ -66,8 +88,8 @@
             <div v-if="openCreateGroupModal" class="modal-backdrop">
               <div class="modal-dialog">
                 <div class="modal-content p-4">
-                  <h5>Crea nuovo gruppo</h5>
-                  <form @submit.prevent="submitGroup">
+                  <h5>{{ editGroupMode ? 'Modifica gruppo' : 'Crea nuovo gruppo' }}</h5>
+                  <form @submit.prevent="editGroupMode ? submitEditGroup() : submitGroup()">
                     <div class="mb-3">
                       <label class="form-label">Nome gruppo</label>
                       <input v-model="newGroupName" class="form-control" required minlength="3" maxlength="16" />
@@ -121,7 +143,9 @@
                     </div>
                     <div class="d-flex justify-content-end gap-2">
                       <button type="button" class="btn btn-secondary" @click="closeCreateGroupModal">Annulla</button>
-                      <button type="submit" class="btn btn-primary">Crea</button>
+                      <button type="submit" class="btn btn-primary">
+                        {{ editGroupMode ? 'Salva modifiche' : 'Crea' }}
+                      </button>
                     </div>
                     <div v-if="groupError" class="alert alert-danger mt-2">{{ groupError }}</div>
                   </form>
@@ -149,8 +173,24 @@
                     v-if="openConversation"
                     class="chat-box d-flex flex-column"
                 >
-                    <div class="border-bottom p-3 rounded-top bg-white">
-                        <h5 class="mb-0">{{ openConversation.username }}</h5>
+                    <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
+                      <h5 class="mb-0">{{ openConversation.username }}</h5>
+                      <div>
+                        <button
+                          v-if="isGroup"
+                          class="btn btn-outline-primary btn-sm me-2"
+                          @click="openEditGroupModal"
+                        >
+                          Edit Group
+                        </button>
+                        <button
+                          v-if="isGroup"
+                          class="btn btn-outline-danger btn-sm"
+                          @click="leaveGroup(openConversation.id)"
+                        >
+                          Lascia Gruppo
+                        </button>
+                      </div>
                     </div>
                     <!-- Sezione messaggi scrollabile -->
                     <div class="flex-grow-1 overflow-auto p-3 messages-area">
@@ -215,15 +255,28 @@
             <div class="modal-content p-3">
               <h5>Scegli la chat dove inoltrare</h5>
               <ul class="list-group">
+                <!-- Conversazioni 1:1 -->
                 <li
                   v-for="conv in conversations"
-                  :key="conv.id"
+                  :key="'chat-' + conv.id"
                   class="list-group-item list-group-item-action"
                   @click="forwardMessageTo(conv.id)"
                   style="cursor:pointer;"
                 >
                   <img :src="conv.profilePicture" alt="profile" width="32" class="rounded-circle me-2" />
                   {{ conv.username }}
+                </li>
+                
+                <!-- Gruppi -->
+                <li
+                  v-for="group in groups"
+                  :key="'group-' + group.id"
+                  class="list-group-item list-group-item-action"
+                  @click="forwardMessageTo(group.id)"
+                  style="cursor:pointer;"
+                >
+                  <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="32" class="rounded-circle me-2" />
+                  👥 {{ group.name }}
                 </li>
               </ul>
               <button class="btn btn-secondary mt-3" @click="closeForwardModal">Annulla</button>
@@ -250,13 +303,12 @@ export default {
             openConversationId: null,
             conversations: [],
             polling: null,
-            openConversation: null, // oggetto conversazione selezionata
+            openConversation: null,
             messages: [],
             messagesPolling: null,
             newMessage: "",
             forwardModalOpen: false,
             forwardMsg: null,
-            openCreateGroupModal: false,
             newGroupName: "",
             newGroupPhoto: "",
             groupMembers: [],
@@ -264,7 +316,19 @@ export default {
             searchUser: "",
             searchResultsGroup: [],
             dropdownOpenGroup: false,
+            groups: [],
+            openCreateGroupModal: false, 
+            editGroupMode: false,
+            editGroupId: null,
         }
+    },
+    computed: {
+      isGroup() {
+        return this.openConversation && (
+          this.openConversation.name || 
+          (this.openConversation.username && this.openConversation.username.startsWith('👥'))
+        );
+      }
     },
     methods: {
         goToProfile() {
@@ -309,7 +373,7 @@ export default {
             setTimeout(() => { this.dropdownOpen = false; }, 150);
         },
         async startConversation(user) {
-            const userId = localStorage.getItem("userId"); // chi ha cercato
+            const userId = localStorage.getItem("userId");
             console.log("Utente loggato (chi cerca):", userId);
             console.log("Utente selezionato dalla ricerca:", user);
 
@@ -325,9 +389,14 @@ export default {
                 this.search = "";
                 this.searchResults = [];
                 this.dropdownOpen = false;
-                await this.loadConversations(); // aggiorna subito la lista
+                await this.loadAll(); // aggiorna la lista unificata
+                
+                // Apri automaticamente la conversazione appena creata/trovata
+                const conv = this.conversations.find(c => c.id === data.conversationId);
+                if (conv) {
+                    this.openConv(conv);
+                }
             } else {
-                // Rimuovo l'alert fastidioso, mostro solo in console
                 console.log("Errore nella creazione della conversazione:", data.message || data);
             }
         },
@@ -543,8 +612,42 @@ export default {
             this.groupError = "Errore di rete";
           }
         },
+        async submitEditGroup() {
+          this.groupError = "";
+          if (!this.newGroupName || this.newGroupName.length < 3 || this.newGroupName.length > 16) {
+            this.groupError = "Il nome deve essere tra 3 e 16 caratteri";
+            return;
+          }
+          const userId = localStorage.getItem("userId");
+          // Cambia nome
+          await fetch(`${__API_URL__}/groups/${this.editGroupId}/name`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Authorization: userId },
+            body: JSON.stringify({ name: this.newGroupName })
+          });
+          // Cambia foto
+          await fetch(`${__API_URL__}/groups/${this.editGroupId}/photo`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Authorization: userId },
+            body: JSON.stringify({ photo: this.newGroupPhoto })
+          });
+          // Aggiungi membri (solo quelli nuovi)
+          const currentUsernames = (this.openConversation.members || []).map(u => u.username);
+          const newMembers = this.groupMembers.filter(u => !currentUsernames.includes(u.username));
+          if (newMembers.length > 0) {
+            await fetch(`${__API_URL__}/groups/${this.editGroupId}/members`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", Authorization: userId },
+              body: JSON.stringify({ members: newMembers.map(u => u.username) })
+            });
+          }
+          this.closeCreateGroupModal();
+          await this.loadAll();
+        },
         closeCreateGroupModal() {
           this.openCreateGroupModal = false;
+          this.editGroupMode = false;
+          this.editGroupId = null;
           this.newGroupName = "";
           this.newGroupPhoto = "";
           this.groupMembers = [];
@@ -555,16 +658,61 @@ export default {
         },
         async loadAll() {
             await this.loadConversations();
+            await this.loadGroups(); 
             if (this.openConversation) {
                 await this.loadMessages(this.openConversation.id);
                 await this.markMessagesRead();
             }
             // Qui puoi aggiungere altre fetch se servono
         },
+        async loadGroups() {
+            const userId = localStorage.getItem("userId");
+            const res = await fetch(`${__API_URL__}/groups`, {
+                headers: { Authorization: userId }
+            });
+            if (res.ok) {
+                this.groups = await res.json();
+            } else {
+                this.groups = [];
+            }
+        },
+        async leaveGroup(groupId) {
+            if (!confirm("Sei sicuro di voler lasciare questo gruppo?")) return;
+            const userId = localStorage.getItem("userId");
+            const res = await fetch(`${__API_URL__}/groups/${groupId}/members`, {
+                method: "DELETE",
+                headers: { Authorization: userId }
+            });
+            if (res.ok) {
+                this.successMsg = "Hai lasciato il gruppo.";
+                await this.loadAll();
+                this.openConversation = null;
+            } else {
+                alert("Errore durante l'uscita dal gruppo.");
+            }
+        },
+        openEditGroupModal() {
+            console.log("=== DEBUG EDIT GROUP ===");
+            console.log("openConversation:", this.openConversation);
+            console.log("openConversation.name:", this.openConversation?.name);
+            console.log("openConversation.username:", this.openConversation?.username);
+            console.log("openCreateGroupModal prima:", this.openCreateGroupModal);
+            
+            this.editGroupMode = true;
+            this.openCreateGroupModal = true;
+            this.editGroupId = this.openConversation.id;
+            this.newGroupName = this.openConversation.name || this.openConversation.username;
+            this.newGroupPhoto = this.openConversation.photo || this.openConversation.profilePicture || "";
+            this.groupMembers = this.openConversation.members || [];
+            this.groupError = "";
+            
+            console.log("openCreateGroupModal dopo:", this.openCreateGroupModal);
+            console.log("editGroupMode:", this.editGroupMode);
+        },
     },
     mounted() {
         this.loadAll();
-        this.polling = setInterval(this.loadAll, 1500);
+        this.polling = setInterval(this.loadAll, 6000);
 
         if (this.$route.query.msg) {
             this.successMsg = this.$route.query.msg;

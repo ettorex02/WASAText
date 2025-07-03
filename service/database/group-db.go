@@ -153,3 +153,16 @@ func (db *appdbimpl) SetGroupPhoto(groupID int, photoUrl string) error {
 	_, err = db.c.Exec(`UPDATE conversations SET photo = ? WHERE id = ?`, photoUrl, groupID)
 	return err
 }
+
+// AddMembersToGroup aggiunge utenti a un gruppo esistente
+func (db *appdbimpl) AddMembersToGroup(groupID int, usernames []string) error {
+	for _, username := range usernames {
+		var userID int
+		err := db.c.QueryRow(`SELECT id FROM users WHERE username = ?`, username).Scan(&userID)
+		if err != nil {
+			continue // ignora utenti non trovati
+		}
+		_, _ = db.c.Exec(`INSERT OR IGNORE INTO conversation_members (conversation_id, user_id) VALUES (?, ?)`, groupID, userID)
+	}
+	return nil
+}

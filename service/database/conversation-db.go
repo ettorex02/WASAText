@@ -13,10 +13,6 @@ func (db *appdbimpl) CreateConversation(user1, user2 int) (int64, error) {
 	if user1 == user2 {
 		return 0, fmt.Errorf("non puoi creare una conversazione con te stesso")
 	}
-	// Ordina per evitare duplicati
-	if user1 > user2 {
-		user1, user2 = user2, user1
-	}
 
 	// Controlla se esiste già una conversazione 1:1 tra questi due utenti
 	var existingID int
@@ -26,14 +22,14 @@ func (db *appdbimpl) CreateConversation(user1, user2 int) (int64, error) {
         JOIN conversation_members cm1 ON c.id = cm1.conversation_id AND cm1.user_id = ?
         JOIN conversation_members cm2 ON c.id = cm2.conversation_id AND cm2.user_id = ?
         WHERE c.is_group = 0
-        GROUP BY c.id
-        HAVING COUNT(*) = 2
     `, user1, user2).Scan(&existingID)
-	if err != sql.ErrNoRows && err != nil {
-		return 0, err
+
+	if err == nil && existingID != 0 {
+		// Conversazione già esistente, restituisci l'ID esistente
+		return int64(existingID), nil
 	}
-	if existingID != 0 {
-		return 0, fmt.Errorf("conversazione già esistente")
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
 	}
 
 	// Crea la conversazione

@@ -29,6 +29,7 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.DELETE("/groups/:id/members", rt.leaveGroup)
 	rt.router.PATCH("/groups/:id/name", rt.setGroupName)
 	rt.router.PATCH("/groups/:id/photo", rt.setGroupPhoto)
+	rt.router.PATCH("/groups/:id/members", rt.addGroupMembers)
 
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)

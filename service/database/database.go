@@ -68,6 +68,7 @@ type AppDatabase interface {
 	LeaveGroup(groupID int, userID int) error
 	SetGroupName(groupID int, newName string) error
 	SetGroupPhoto(groupID int, photoUrl string) error
+	AddMembersToGroup(groupID int, usernames []string) error
 }
 
 type appdbimpl struct {
@@ -82,9 +83,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// SOLO PER SVILUPPO: elimina tutte le tabelle esistenti
-	if err := dropAllTables(db); err != nil {
-		return nil, fmt.Errorf("error dropping tables: %w", err)
-	}
+	// if err := dropAllTables(db); err != nil {
+	// return nil, fmt.Errorf("error dropping tables: %w", err)
+	// }
 
 	// Check if the main table exists. If not, the database is empty, and we need to create the structure
 	var tableName string
@@ -149,18 +150,4 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 func (db *appdbimpl) Ping() error {
 	return db.c.Ping()
-}
-
-func dropAllTables(db *sql.DB) error {
-	_, err := db.Exec(`
-        DROP TABLE IF EXISTS reactions;
-        DROP TABLE IF EXISTS messages;
-        DROP TABLE IF EXISTS conversation_members;
-        DROP TABLE IF EXISTS conversations;
-		DROP TABLE IF EXISTS groups;
-        DROP TABLE IF EXISTS group_members;
-        DROP TABLE IF EXISTS users;
-        DROP TABLE IF EXISTS conversation_participants;
-    `)
-	return err
 }

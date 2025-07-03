@@ -29,11 +29,12 @@ func (rt *_router) CreateConversationHandler(w http.ResponseWriter, r *http.Requ
 
 	convID, err := rt.db.CreateConversation(user1, user2)
 	if err != nil {
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Conversazione già esistente"})
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // Cambiato da StatusConflict
 	json.NewEncoder(w).Encode(map[string]interface{}{"conversationId": convID})
 }
 

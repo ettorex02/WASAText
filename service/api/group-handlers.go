@@ -133,3 +133,30 @@ func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// PATCH /groups/:id/members
+func (rt *_router) addGroupMembers(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if !checkAuthorization(w, r) {
+		return
+	}
+	groupID, err := strconv.Atoi(ps.ByName("id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"})
+		return
+	}
+	var req struct {
+		Members []string `json:"members"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Members) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Membri non validi"})
+		return
+	}
+	if err := rt.db.AddMembersToGroup(groupID, req.Members); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiunta membri"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
