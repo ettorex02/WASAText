@@ -27,9 +27,11 @@ type Message struct {
 }
 
 type Conversation struct {
-	ID      int `json:"id"`
-	User1ID int `json:"user1_id"`
-	User2ID int `json:"user2_id"`
+	ID      int    `json:"id"`
+	Name    string `json:"name,omitempty"`
+	Photo   string `json:"photo,omitempty"`
+	IsGroup bool   `json:"is_group"`
+	Members []User `json:"members"`
 }
 
 type Group struct {

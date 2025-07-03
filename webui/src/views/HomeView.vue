@@ -159,6 +159,13 @@
                             :class="isMyMessage(msg) ? '' : 'flex-row-reverse'">
                             <img :src="msg.sender.profilePicture" alt="profile" width="44" height="44" class="rounded-circle mx-2" />
                             <div>
+                                <!-- Mostra il nome SOLO se il messaggio NON è mio -->
+                                <div
+                                  v-if="!isMyMessage(msg)"
+                                  class="fw-bold mb-1"
+                                  style="font-size: 1rem;">
+                                  {{ msg.sender.displayName || msg.sender.username }}
+                                </div>
                                 <div :class="isMyMessage(msg) ? 'msg-sent' : 'msg-received'"
                                     style="font-size: 1.3rem; max-width: 520px; word-break: break-word;">
                                     <span v-if="msg.is_forwarded || msg.isForwarded" class="badge bg-warning text-dark mb-1" style="font-size: 0.9rem;">
@@ -182,7 +189,6 @@
                                         </button>
                                     </div>
                                 </div>
-                                <!-- Aggiungi dopo i bottoni elimina/inoltra -->
                                 <MessageReactions
                                   :message="msg"
                                   :conversationId="openConversation.id"

@@ -47,6 +47,7 @@ type AppDatabase interface {
 	SetMyPhotoById(userId, photoUrl string) error
 	SetMyUserNameById(userId, newUsername string) error
 	SearchUsers(query string) ([]*structures.User, error)
+	// Conversazioni 1:1
 	CreateConversation(user1, user2 int) (int64, error)
 	// Messaggi
 	SendMessage(conversationId, senderId int, content, mediaType string, isForwarded bool) ([]*structures.Message, error)
@@ -61,10 +62,12 @@ type AppDatabase interface {
 	AddReaction(messageId int, userId int, emoji string) error
 	RemoveReaction(messageId int, userId int) error
 	GetReactions(messageId int) ([]*structures.Reaction, error)
-	// Gruppi
-	AddToGroup(name string, photo string, usernames []string) (*structures.Group, error) // operationId: addToGroup
-	ListGroups(userID int) ([]*structures.Group, error)                                  // operationId: listGroups
-
+	// Gruppi (usano la logica unificata delle conversazioni)
+	AddToGroup(name string, photo string, usernames []string) (*structures.Conversation, error) // operationId: addToGroup
+	ListGroups(userID int) ([]*structures.Conversation, error)                                  // operationId: listGroups
+	LeaveGroup(groupID int, userID int) error
+	SetGroupName(groupID int, newName string) error
+	SetGroupPhoto(groupID int, photoUrl string) error
 }
 
 type appdbimpl struct {
@@ -79,9 +82,9 @@ func New(db *sql.DB) (AppDatabase, error) {
 	}
 
 	// SOLO PER SVILUPPO: elimina tutte le tabelle esistenti
-	//if err := dropAllTables(db); err != nil {
-	//return nil, fmt.Errorf("error dropping tables: %w", err)
-	//}
+	if err := dropAllTables(db); err != nil {
+		return nil, fmt.Errorf("error dropping tables: %w", err)
+	}
 
 	// Check if the main table exists. If not, the database is empty, and we need to create the structure
 	var tableName string
@@ -94,25 +97,18 @@ func New(db *sql.DB) (AppDatabase, error) {
                 display_name TEXT NOT NULL,
                 profile_picture TEXT
             );`,
-			`CREATE TABLE IF NOT EXISTS groups (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                photo TEXT
-            );`,
-			`CREATE TABLE IF NOT EXISTS group_members (
-                group_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                PRIMARY KEY (group_id, user_id),
-                FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            );`,
 			`CREATE TABLE IF NOT EXISTS conversations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user1_id INTEGER NOT NULL,
-                user2_id INTEGER NOT NULL,
-                UNIQUE(user1_id, user2_id),
-                FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+                name TEXT,                -- NULL per chat 1:1, valorizzato per gruppi
+                photo TEXT,               -- NULL per chat 1:1, valorizzato per gruppi
+                is_group BOOLEAN NOT NULL DEFAULT 0
+            );`,
+			`CREATE TABLE IF NOT EXISTS conversation_members (
+                conversation_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                PRIMARY KEY (conversation_id, user_id),
+                FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );`,
 			`CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +117,7 @@ func New(db *sql.DB) (AppDatabase, error) {
                 content TEXT NOT NULL,
                 is_forwarded BOOLEAN NOT NULL DEFAULT 0,
                 media_type TEXT NOT NULL,
-                status TEXT NOT NULL CHECK (status IN ('received', 'read')),
+                status TEXT NOT NULL CHECK (status IN ('sent', 'received', 'read')),
                 timestamp DATETIME NOT NULL,
                 FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
                 FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
@@ -159,9 +155,10 @@ func dropAllTables(db *sql.DB) error {
 	_, err := db.Exec(`
         DROP TABLE IF EXISTS reactions;
         DROP TABLE IF EXISTS messages;
-        DROP TABLE IF EXISTS group_members;
-        DROP TABLE IF EXISTS groups;
+        DROP TABLE IF EXISTS conversation_members;
         DROP TABLE IF EXISTS conversations;
+		DROP TABLE IF EXISTS groups;
+        DROP TABLE IF EXISTS group_members;
         DROP TABLE IF EXISTS users;
         DROP TABLE IF EXISTS conversation_participants;
     `)

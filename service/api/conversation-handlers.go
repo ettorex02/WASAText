@@ -27,7 +27,6 @@ func (rt *_router) CreateConversationHandler(w http.ResponseWriter, r *http.Requ
 	user1, _ := strconv.Atoi(r.Header.Get("Authorization"))
 	user2 := req.UserId
 
-	// Crea sempre una nuova conversazione, senza controllare se esiste già
 	convID, err := rt.db.CreateConversation(user1, user2)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)

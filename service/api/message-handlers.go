@@ -38,14 +38,14 @@ func (rt *_router) SendMessageHandler(w http.ResponseWriter, r *http.Request, ps
 	if req.MediaType == "" {
 		req.MediaType = "text"
 	}
-	message, err := rt.db.SendMessage(conversationId, userId, req.Content, req.MediaType, req.IsForwarded)
-	if err != nil {
+	messages, err := rt.db.SendMessage(conversationId, userId, req.Content, req.MediaType, req.IsForwarded)
+	if err != nil || len(messages) == 0 {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Errore invio messaggio"})
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(message) // Restituisci solo il messaggio inviato
+	json.NewEncoder(w).Encode(messages[len(messages)-1]) // Restituisci solo il messaggio inviato
 }
 
 // GET /conversations/:id/messages

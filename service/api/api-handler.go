@@ -24,8 +24,11 @@ func (rt *_router) Handler() http.Handler {
 	rt.router.POST("/conversations/:id/messages/:messageId/reactions", rt.AddReactionHandler)
 	rt.router.DELETE("/conversations/:id/messages/:messageId/reactions", rt.RemoveReactionHandler)
 	rt.router.GET("/conversations/:id/messages/:messageId/reactions", rt.GetReactionsHandler)
-	rt.router.POST("/groups", rt.addToGroup) // addToGroup
-	rt.router.GET("/groups", rt.listGroups)  // listGroups
+	rt.router.POST("/groups", rt.addToGroup)
+	rt.router.GET("/groups", rt.listGroups)
+	rt.router.DELETE("/groups/:id/members", rt.leaveGroup)
+	rt.router.PATCH("/groups/:id/name", rt.setGroupName)
+	rt.router.PATCH("/groups/:id/photo", rt.setGroupPhoto)
 
 	// Special routes
 	rt.router.GET("/liveness", rt.liveness)
