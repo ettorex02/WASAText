@@ -54,6 +54,9 @@ func (db *appdbimpl) GetMessages(conversationId int) ([]*structures.Message, err
 		return nil, err
 	}
 	defer rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
 	var messages []*structures.Message
 	for rows.Next() {
@@ -117,6 +120,10 @@ func (db *appdbimpl) GetMessageById(conversationId, messageId int) (*structures.
 		return nil, err
 	}
 	defer rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	if rows.Next() {
 		var msg structures.Message
 		var sender structures.User

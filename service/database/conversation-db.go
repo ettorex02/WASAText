@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -28,7 +29,7 @@ func (db *appdbimpl) CreateConversation(user1, user2 int) (int64, error) {
 		// Conversazione già esistente, restituisci l'ID esistente
 		return int64(existingID), nil
 	}
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
 
@@ -108,6 +109,11 @@ func (db *appdbimpl) GetUserConversations(userId int) ([]*structures.Conversatio
 			LastMessage:     lastMsg,
 			LastMessageTime: lastTime,
 		})
+	}
+
+	// Controlla errori del rows
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	// Ordina in ordine cronologico inverso (ultimo messaggio più recente)

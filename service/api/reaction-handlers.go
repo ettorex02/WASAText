@@ -10,7 +10,7 @@ import (
 )
 
 // POST /conversations/:id/messages/:messageId/reactions
-func (rt *_router) AddReactionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) commentMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
@@ -47,7 +47,7 @@ func (rt *_router) AddReactionHandler(w http.ResponseWriter, r *http.Request, ps
 }
 
 // DELETE /conversations/:id/messages/:messageId/reactions
-func (rt *_router) RemoveReactionHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) uncommentMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
@@ -74,7 +74,7 @@ func (rt *_router) RemoveReactionHandler(w http.ResponseWriter, r *http.Request,
 }
 
 // GET /conversations/:id/messages/:messageId/reactions
-func (rt *_router) GetReactionsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) getMessageReactions(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})

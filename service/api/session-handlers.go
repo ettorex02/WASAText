@@ -11,7 +11,7 @@ import (
 // Assicurati che _router abbia il campo db di tipo AppDatabase
 // type _router struct { db database.AppDatabase }
 
-func (rt *_router) SessionHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"message":"Method Not Allowed"}`, http.StatusMethodNotAllowed)
 		return

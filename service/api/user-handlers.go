@@ -7,24 +7,27 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) GetUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) getUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
 	userId := ps.ByName("userId")
 	user, err := rt.db.GetUserById(userId)
-	if err != nil || user == nil {
-		w.Header().Set("Content-Type", "application/json")
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Utente non trovato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non trovato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if encErr := json.NewEncoder(w).Encode(user); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // PATCH /users/:username/photo per cambiare foto profilo
-func (rt *_router) SetMyPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
@@ -48,7 +51,7 @@ func (rt *_router) SetMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 }
 
 // PATCH /users/:username per cambiare username
-func (rt *_router) SetMyUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
@@ -72,22 +75,28 @@ func (rt *_router) SetMyUserName(w http.ResponseWriter, r *http.Request, ps http
 }
 
 // GET /users/search?q=...
-func (rt *_router) SearchUsersHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (rt *_router) searchUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
 	query := r.URL.Query().Get("q")
 	if len(query) < 1 {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Query troppo corta"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Query troppo corta"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	users, err := rt.db.SearchUsers(query)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore ricerca utenti"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore ricerca utenti"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	if encErr := json.NewEncoder(w).Encode(users); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }

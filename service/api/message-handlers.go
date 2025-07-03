@@ -9,7 +9,7 @@ import (
 )
 
 // POST /conversations/:id/messages
-func (rt *_router) SendMessageHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
@@ -49,7 +49,7 @@ func (rt *_router) SendMessageHandler(w http.ResponseWriter, r *http.Request, ps
 }
 
 // GET /conversations/:id/messages
-func (rt *_router) GetMessagesHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
@@ -81,7 +81,7 @@ func (rt *_router) GetMessagesHandler(w http.ResponseWriter, r *http.Request, ps
 }
 
 // PUT /conversations/:id/messages/read
-func (rt *_router) SetMessagesReadHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) markMessagesRead(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
@@ -110,7 +110,7 @@ func (rt *_router) SetMessagesReadHandler(w http.ResponseWriter, r *http.Request
 }
 
 // DELETE /conversations/:id/messages/:messageId
-func (rt *_router) DeleteMessageHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
@@ -146,7 +146,7 @@ func (rt *_router) DeleteMessageHandler(w http.ResponseWriter, r *http.Request, 
 }
 
 // POST /conversations/:id/messages/:messageId/forward
-func (rt *_router) ForwardMessageHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})

@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/ettorex02/WASAText/service/structures"
@@ -12,7 +14,11 @@ func (db *appdbimpl) AddToGroup(name string, photo string, usernames []string) (
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			// Log dell'errore se necessario
+		}
+	}()
 
 	// Crea la conversazione di gruppo
 	res, err := tx.Exec(`INSERT INTO conversations (name, photo, is_group) VALUES (?, ?, 1)`, name, photo)
@@ -25,7 +31,7 @@ func (db *appdbimpl) AddToGroup(name string, photo string, usernames []string) (
 	}
 	convID := int(convID64)
 
-	var members []structures.User
+	members := make([]structures.User, 0) // oppure se conosci la dimensione: make([]structures.User, 0, expectedSize)
 	for _, username := range usernames {
 		var user structures.User
 		err := db.c.QueryRow(`SELECT id, username, display_name, profile_picture FROM users WHERE username = ?`, username).

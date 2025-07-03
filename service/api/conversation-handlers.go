@@ -13,14 +13,16 @@ type createConvRequest struct {
 }
 
 // POST /conversations
-func (rt *_router) CreateConversationHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
 	var req createConvRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserId == 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "userId mancante"})
+		if err := json.NewEncoder(w).Encode(map[string]string{"message": "userId mancante"}); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	// userId del chiamante
@@ -30,7 +32,9 @@ func (rt *_router) CreateConversationHandler(w http.ResponseWriter, r *http.Requ
 	convID, err := rt.db.CreateConversation(user1, user2)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": err.Error()}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -39,7 +43,7 @@ func (rt *_router) CreateConversationHandler(w http.ResponseWriter, r *http.Requ
 }
 
 // GET /conversations
-func (rt *_router) GetUserConversationsHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
