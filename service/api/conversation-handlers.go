@@ -8,38 +8,48 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type createConvRequest struct {
-	UserId int `json:"userId"`
-}
-
 // POST /conversations
 func (rt *_router) createConversation(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		return
 	}
-	var req createConvRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserId == 0 {
+
+	var req struct {
+		UserId int `json:"userId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(map[string]string{"message": "userId mancante"}); err != nil {
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Richiesta non valida"}); encErr != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 		return
 	}
-	// userId del chiamante
-	user1, _ := strconv.Atoi(r.Header.Get("Authorization"))
-	user2 := req.UserId
 
-	convID, err := rt.db.CreateConversation(user1, user2)
+	userId := r.Header.Get("Authorization")
+	userIdInt, err := strconv.Atoi(userId)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	convID, err := rt.db.CreateConversation(userIdInt, req.UserId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": err.Error()}); encErr != nil {
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore creazione conversazione"}); encErr != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // Cambiato da StatusConflict
-	json.NewEncoder(w).Encode(map[string]interface{}{"conversationId": convID})
+	w.WriteHeader(http.StatusCreated)
+	if encErr := json.NewEncoder(w).Encode(map[string]interface{}{"conversationId": convID}); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // GET /conversations
@@ -47,18 +57,28 @@ func (rt *_router) getMyConversations(w http.ResponseWriter, r *http.Request, _ 
 	if !checkAuthorization(w, r) {
 		return
 	}
-	userId, err := strconv.Atoi(r.Header.Get("Authorization"))
+
+	userId := r.Header.Get("Authorization")
+	userIdInt, err := strconv.Atoi(userId)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
-	convs, err := rt.db.GetUserConversations(userId)
+
+	conversations, err := rt.db.GetUserConversations(userIdInt)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore recupero conversazioni"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore recupero conversazioni"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(convs)
+	if encErr := json.NewEncoder(w).Encode(conversations); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }

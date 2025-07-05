@@ -28,13 +28,17 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.
 		if err.Error() == "registrazione già effettuata" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"message": "Registrazione già effettuata"})
+			if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Registrazione già effettuata"}); encErr != nil {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
 			return
 		}
 		if err.Error() == "per la registrazione servono displayName e profilePicture" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"message": "Utente non trovato, effettuare la registrazione"})
+			if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non trovato, effettuare la registrazione"}); encErr != nil {
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
 			return
 		}
 		http.Error(w, `{"message":"Internal server error"}`, http.StatusInternalServerError)
@@ -50,11 +54,13 @@ func (rt *_router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct {
+	if encErr := json.NewEncoder(w).Encode(struct {
 		Message string           `json:"message"`
 		User    *structures.User `json:"user"`
 	}{
 		Message: msg,
 		User:    user,
-	})
+	}); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }

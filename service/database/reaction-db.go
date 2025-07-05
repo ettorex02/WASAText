@@ -50,5 +50,11 @@ func (db *appdbimpl) GetReactions(messageId int) ([]*structures.Reaction, error)
 		reaction.User = *user                   // Dereferenzia il puntatore per assegnare il valore
 		reactions = append(reactions, reaction) // Appendi il PUNTATORE
 	}
+
+	// AGGIUNGI CONTROLLO rows.Err():
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return reactions, nil
 }

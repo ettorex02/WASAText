@@ -20,18 +20,24 @@ func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, _ httprout
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" || len(req.Members) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Dati gruppo non validi"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Dati gruppo non validi"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	group, err := rt.db.AddToGroup(req.Name, req.Photo, req.Members)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": err.Error()}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(group)
+	if encErr := json.NewEncoder(w).Encode(group); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // GET /groups (operationId: listGroups)
@@ -42,17 +48,23 @@ func (rt *_router) listGroups(w http.ResponseWriter, r *http.Request, _ httprout
 	userID, err := strconv.Atoi(r.Header.Get("Authorization"))
 	if err != nil || userID == 0 {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	groups, err := rt.db.ListGroups(userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore recupero gruppi"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore recupero gruppi"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(groups)
+	if encErr := json.NewEncoder(w).Encode(groups); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // DELETE /groups/:id/members (operationId: leaveGroup)
@@ -63,18 +75,24 @@ func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, ps httprou
 	groupID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userID, err := strconv.Atoi(r.Header.Get("Authorization"))
 	if err != nil || userID == 0 {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.LeaveGroup(groupID, userID); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": err.Error()}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -88,7 +106,9 @@ func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, ps httpr
 	groupID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	var req struct {
@@ -96,12 +116,16 @@ func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, ps httpr
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Nome non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Nome non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.SetGroupName(groupID, req.Name); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": err.Error()}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -115,7 +139,9 @@ func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, ps http
 	groupID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	var req struct {
@@ -123,12 +149,16 @@ func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, ps http
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Photo == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Foto non valida"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Foto non valida"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.SetGroupPhoto(groupID, req.Photo); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": err.Error()}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -142,7 +172,9 @@ func (rt *_router) addGroupMembers(w http.ResponseWriter, r *http.Request, ps ht
 	groupID, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "ID gruppo non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	var req struct {
@@ -150,12 +182,16 @@ func (rt *_router) addGroupMembers(w http.ResponseWriter, r *http.Request, ps ht
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Members) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Membri non validi"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Membri non validi"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.AddMembersToGroup(groupID, req.Members); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiunta membri"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiunta membri"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

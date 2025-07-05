@@ -37,17 +37,23 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PhotoUrl == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "URL non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "URL non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.SetMyPhotoById(userId, req.PhotoUrl); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiornamento immagine"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore aggiornamento immagine"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	user, _ := rt.db.GetUserById(userId)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if encErr := json.NewEncoder(w).Encode(user); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // PATCH /users/:username per cambiare username
@@ -61,17 +67,23 @@ func (rt *_router) setMyUserName(w http.ResponseWriter, r *http.Request, ps http
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.NewName == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Username non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Username non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.SetMyUserNameById(userId, req.NewName); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Useraname già in uso"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Useraname già in uso"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	user, _ := rt.db.GetUserById(userId)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	if encErr := json.NewEncoder(w).Encode(user); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // GET /users/search?q=...

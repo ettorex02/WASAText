@@ -13,19 +13,25 @@ import (
 func (rt *_router) commentMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	messageId, err := strconv.Atoi(ps.ByName("messageId"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userId, err := strconv.Atoi(r.Header.Get("Authorization"))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Utente non autorizzato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	var req struct {
@@ -33,41 +39,55 @@ func (rt *_router) commentMessage(w http.ResponseWriter, r *http.Request, ps htt
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Emoji == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Emoji mancante"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Emoji mancante"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.AddReaction(messageId, userId, req.Emoji); err != nil {
 		log.Println("Errore AddReaction:", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Errore aggiunta reazione"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Errore aggiunta reazione"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	if encErr := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // DELETE /conversations/:id/messages/:messageId/reactions
 func (rt *_router) uncommentMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	messageId, err := strconv.Atoi(ps.ByName("messageId"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userId, err := strconv.Atoi(r.Header.Get("Authorization"))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Utente non autorizzato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := rt.db.RemoveReaction(messageId, userId); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Errore rimozione reazione"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Errore rimozione reazione"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -77,14 +97,18 @@ func (rt *_router) uncommentMessage(w http.ResponseWriter, r *http.Request, ps h
 func (rt *_router) getMessageReactions(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	messageId, err := strconv.Atoi(ps.ByName("messageId"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -92,11 +116,15 @@ func (rt *_router) getMessageReactions(w http.ResponseWriter, r *http.Request, p
 	if err != nil {
 		log.Println("Errore GetReactions:", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Errore caricamento reazioni"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Errore caricamento reazioni"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(reactions)
+	if encErr := json.NewEncoder(w).Encode(reactions); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }

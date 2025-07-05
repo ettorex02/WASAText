@@ -16,13 +16,17 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	conversationId, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Conversazione non valida"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Conversazione non valida"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userId, err := strconv.Atoi(r.Header.Get("Authorization"))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Utente non autorizzato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	var req struct {
@@ -32,7 +36,9 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Content == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Contenuto mancante"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Contenuto mancante"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	if req.MediaType == "" {
@@ -41,11 +47,15 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	messages, err := rt.db.SendMessage(conversationId, userId, req.Content, req.MediaType, req.IsForwarded)
 	if err != nil || len(messages) == 0 {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Errore invio messaggio"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"message": "Errore invio messaggio"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(messages[len(messages)-1]) // Restituisci solo il messaggio inviato
+	if encErr := json.NewEncoder(w).Encode(messages[len(messages)-1]); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // GET /conversations/:id/messages
@@ -56,14 +66,18 @@ func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, ps ht
 	conversationId, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userIdStr := r.Header.Get("Authorization")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -73,37 +87,49 @@ func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, ps ht
 	messages, err := rt.db.GetMessages(conversationId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Errore recupero messaggi"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Errore recupero messaggi"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(messages)
+	if encErr := json.NewEncoder(w).Encode(messages); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // PUT /conversations/:id/messages/read
 func (rt *_router) markMessagesRead(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	conversationId, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userIdStr := r.Header.Get("Authorization")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	err = rt.db.SetMessagesRead(conversationId, userId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Errore aggiornamento messaggi"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Errore aggiornamento messaggi"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -113,33 +139,43 @@ func (rt *_router) markMessagesRead(w http.ResponseWriter, r *http.Request, ps h
 func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	conversationId, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	messageId, err := strconv.Atoi(ps.ByName("messageId"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userIdStr := r.Header.Get("Authorization")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	// Solo il mittente può eliminare il proprio messaggio
 	err = rt.db.DeleteMessage(conversationId, messageId, userId)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Non autorizzato o errore eliminazione"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Non autorizzato o errore eliminazione"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -149,26 +185,34 @@ func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps http
 func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !checkAuthorization(w, r) {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	sourceConvId, err := strconv.Atoi(ps.ByName("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Conversazione non valida"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	messageId, err := strconv.Atoi(ps.ByName("messageId"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	userIdStr := r.Header.Get("Authorization")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	var req struct {
@@ -176,7 +220,9 @@ func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps htt
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.TargetConversationId == 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "targetConversationId mancante o non valido"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "targetConversationId mancante o non valido"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -184,7 +230,9 @@ func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps htt
 	original, err := rt.db.GetMessageById(sourceConvId, messageId)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio da inoltrare non trovato"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Messaggio da inoltrare non trovato"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -192,9 +240,13 @@ func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps htt
 	messages, err := rt.db.SendMessage(req.TargetConversationId, userId, original.Content, original.MediaType, true)
 	if err != nil || len(messages) == 0 {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Errore inoltro messaggio"})
+		if encErr := json.NewEncoder(w).Encode(map[string]string{"error": "Errore inoltro messaggio"}); encErr != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(messages[len(messages)-1])
+	if encErr := json.NewEncoder(w).Encode(messages[len(messages)-1]); encErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }

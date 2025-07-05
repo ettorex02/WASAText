@@ -105,7 +105,11 @@ func (db *appdbimpl) SetMyPhotoById(userId, photoUrl string) error {
 // SearchUsers restituisce una lista di utenti il cui username contiene la query
 func (db *appdbimpl) SearchUsers(query string) ([]*structures.User, error) {
 	rows, err := db.c.Query(
-		`SELECT id, username, profile_picture FROM users WHERE username LIKE ? LIMIT 20`, "%"+query+"%",
+		`SELECT id, username, display_name, profile_picture 
+         FROM users 
+         WHERE username LIKE ? OR display_name LIKE ? 
+         LIMIT 10`,
+		"%"+query+"%", "%"+query+"%",
 	)
 	if err != nil {
 		return nil, err
@@ -115,10 +119,16 @@ func (db *appdbimpl) SearchUsers(query string) ([]*structures.User, error) {
 	var users []*structures.User
 	for rows.Next() {
 		var user structures.User
-		if err := rows.Scan(&user.ID, &user.Username, &user.ProfilePicture); err != nil {
+		if err := rows.Scan(&user.ID, &user.Username, &user.DisplayName, &user.ProfilePicture); err != nil {
 			return nil, err
 		}
 		users = append(users, &user)
 	}
+
+	// AGGIUNGI CONTROLLO rows.Err():
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return users, nil
 }
