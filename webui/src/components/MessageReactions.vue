@@ -18,7 +18,7 @@
         class="reaction-badge"
         :class="{ 'user-reacted': userHasReacted(group) }"
         :title="getReactionTooltip(group)"
-        @click="userHasReacted(group) ? removeReaction() : null"
+        @click="userHasReacted(group) ? uncommentMessage() : null"
         style="cursor: pointer;"
       >
         {{ emoji }} <span class="reaction-count">{{ group.length }}</span>
@@ -35,7 +35,7 @@
               v-for="emoji in emojis"
               :key="emoji"
               class="btn btn-lg btn-light mx-1 emoji-btn"
-              @click="addReaction(emoji)"
+              @click="commentMessage(emoji)"
             >
               {{ emoji }}
             </button>
@@ -76,7 +76,7 @@ export default {
     }
   },
   methods: {
-    async addReaction(emoji) {
+    async commentMessage(emoji) {
       try {
         const response = await fetch(
           `${__API_URL__}/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
@@ -99,7 +99,7 @@ export default {
         console.error('Errore di rete:', error);
       }
     },
-    async removeReaction() {
+    async uncommentMessage() {
       try {
         const response = await fetch(
           `${__API_URL__}/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
