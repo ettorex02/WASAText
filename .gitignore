@@ -12,5 +12,7 @@ docker-compose.log
 /doc/json
 /doc/markdown
 
+/node_modules/
+
 .vscode/*
 !.vscode/extensions.json
