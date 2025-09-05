@@ -17,7 +17,7 @@
           <label class="form-label fs-5">Cambia Username</label>
           <div class="input-group">
             <input v-model="newUsername" class="form-control form-control-lg" placeholder="Nuovo username" />
-            <button type="button" class="btn btn-primary" @click="changeUsername">Cambia</button>
+            <button type="button" class="btn btn-primary" @click="setMyUsername">Cambia</button>
           </div>
         </div>
 
@@ -26,7 +26,7 @@
           <label class="form-label fs-5">Cambia Immagine Profilo</label>
           <div class="input-group">
             <input v-model="newProfilePicture" class="form-control form-control-lg" placeholder="Nuovo URL immagine" />
-            <button type="button" class="btn btn-primary" @click="changeProfilePicture">Cambia</button>
+            <button type="button" class="btn btn-primary" @click="setMyPhoto">Cambia</button>
           </div>
         </div>
 
@@ -53,10 +53,10 @@ export default {
     }
   },
   async mounted() {
-    await this.loadUser();
+    await this.getUser();
   },
   methods: {
-    async loadUser() {
+    async getUser() {
       const userId = localStorage.getItem("userId");
       const res = await fetch(`${__API_URL__}/users/${userId}`, {
         headers: { Authorization: userId }
@@ -69,7 +69,7 @@ export default {
         this.error = true;
       }
     },
-    async changeProfilePicture() {
+    async setMyPhoto() {
       this.message = "";
       this.error = false;
       if (!this.newProfilePicture) {
@@ -93,7 +93,7 @@ export default {
         this.error = true;
       }
     },
-    async changeUsername() {
+    async setMyUsername() {
       this.message = "";
       this.error = false;
       if (!this.newUsername || this.newUsername.length < 3) {
@@ -119,7 +119,7 @@ export default {
         localStorage.setItem("username", this.newUsername);
         this.user.username = this.newUsername;
         this.newUsername = "";
-        await this.loadUser();
+        await this.getUser();
       } else {
         this.message = data.message || "Errore";
         this.error = true;

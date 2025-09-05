@@ -121,7 +121,7 @@
                             v-for="user in searchResultsGroup"
                             :key="user.username"
                             class="dropdown-item d-flex align-items-center"
-                            @mousedown.prevent="addMemberToGroup(user)"
+                            @mousedown.prevent="addToGroup(user)"
                           >
                             <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2" />
                             <span>{{ user.username }}</span>
@@ -260,7 +260,7 @@
                   v-for="conv in conversations"
                   :key="'chat-' + conv.id"
                   class="list-group-item list-group-item-action"
-                  @click="forwardMessageTo(conv.id)"
+                  @click="forwardMessage(conv.id)"
                   style="cursor:pointer;"
                 >
                   <img :src="conv.profilePicture" alt="profile" width="32" class="rounded-circle me-2" />
@@ -272,7 +272,7 @@
                   v-for="group in groups"
                   :key="'group-' + group.id"
                   class="list-group-item list-group-item-action"
-                  @click="forwardMessageTo(group.id)"
+                  @click="forwardMessage(group.id)"
                   style="cursor:pointer;"
                 >
                   <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="32" class="rounded-circle me-2" />
@@ -400,7 +400,7 @@ export default {
                 console.log("Errore nella creazione della conversazione:", data.message || data);
             }
         },
-        async loadConversations() {
+        async getMyConversation() {
             const userId = localStorage.getItem("userId");
             const res = await fetch(`${__API_URL__}/conversations`, {
                 headers: { Authorization: userId }
@@ -512,7 +512,7 @@ export default {
           this.forwardMsg = null;
           this.forwardModalOpen = false;
         },
-        async forwardMessageTo(targetConversationId) {
+        async forwardMessage(targetConversationId) {
           if (!this.forwardMsg) return;
           const userId = localStorage.getItem("userId");
           const res = await fetch(
@@ -558,7 +558,7 @@ export default {
         closeDropdownGroup() {
           setTimeout(() => { this.dropdownOpenGroup = false; }, 150);
         },
-        addMemberToGroup(user) {
+        addToGroup(user) {
           if (!this.groupMembers.some(u => u.username === user.username)) {
             this.groupMembers.push(user);
           }
@@ -603,7 +603,7 @@ export default {
             });
             if (res.ok) {
               this.closeCreateGroupModal();
-              await this.loadConversations?.(); // aggiorna la lista gruppi/conversazioni
+              await this.getMyConversation?.(); // aggiorna la lista gruppi/conversazioni
             } else {
               const data = await res.json();
               this.groupError = data.message || "Errore creazione gruppo";
@@ -657,7 +657,7 @@ export default {
           this.dropdownOpenGroup = false;
         },
         async loadAll() {
-            await this.loadConversations();
+            await this.getMyConversation();
             await this.loadGroups(); 
             if (this.openConversation) {
                 await this.getConversation(this.openConversation.id);
