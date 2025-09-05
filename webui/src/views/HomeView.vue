@@ -232,7 +232,7 @@
                                 <MessageReactions
                                   :message="msg"
                                   :conversationId="openConversation.id"
-                                  @refresh="loadMessages(openConversation.id)"
+                                  @refresh="getConversation(openConversation.id)"
                                 />
                             </div>
                         </div>
@@ -418,7 +418,7 @@ export default {
         async openConv(conv) {
             this.openConversation = conv;
             this.messages = []; // <-- svuota subito!
-            await this.loadMessages(conv.id);
+            await this.getConversation(conv.id);
             await this.markMessagesRead();
 
             // Ogni volta che cambio chat, resetto il polling dei messaggi
@@ -429,12 +429,12 @@ export default {
             if (!this.openConversation) return;
             this.messagesPolling = setInterval(async () => {
                 if (this.openConversation) {
-                    await this.loadMessages(this.openConversation.id);
+                    await this.getConversation(this.openConversation.id);
                     await this.markMessagesRead();
                 }
             }, 1000);
         },
-        async loadMessages(conversationId) {
+        async getConversation(conversationId) {
             const userId = localStorage.getItem("userId");
             const res = await fetch(`${__API_URL__}/conversations/${conversationId}/messages`, {
                 headers: { Authorization: userId }
@@ -466,7 +466,7 @@ export default {
             });
             if (res.ok) {
                 this.newMessage = "";
-                await this.loadMessages(this.openConversation.id); // <-- aggiorna subito!
+                await this.getConversation(this.openConversation.id); // <-- aggiorna subito!
             }
         },
         async markMessagesRead() {
@@ -660,7 +660,7 @@ export default {
             await this.loadConversations();
             await this.loadGroups(); 
             if (this.openConversation) {
-                await this.loadMessages(this.openConversation.id);
+                await this.getConversation(this.openConversation.id);
                 await this.markMessagesRead();
             }
             // Qui puoi aggiungere altre fetch se servono
