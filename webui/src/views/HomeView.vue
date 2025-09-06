@@ -665,7 +665,7 @@ export default {
             }
             // Qui puoi aggiungere altre fetch se servono
         },
-        async loadGroups() {
+        async listGroups() {
             const userId = localStorage.getItem("userId");
             const res = await fetch(`${__API_URL__}/groups`, {
                 headers: { Authorization: userId }
