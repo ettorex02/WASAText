@@ -1,8 +1,8 @@
 <template>
   <button
     class="btn btn-outline-danger btn-sm ms-3"
-    @click="leaveGroup"
     title="Lascia gruppo"
+    @click="leaveGroup"
   >
     Lascia Gruppo
   </button>
@@ -22,13 +22,12 @@ export default {
     async leaveGroup() {
       if (!confirm("Sei sicuro di voler lasciare questo gruppo?")) return;
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/groups/${this.groupId}/members`, {
-        method: "DELETE",
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
+      try {
+        await this.$axios.delete(`/groups/${this.groupId}/members`, {
+          headers: { Authorization: userId }
+        });
         this.$emit('left');
-      } else {
+      } catch (e) {
         alert("Errore durante l'uscita dal gruppo.");
       }
     }

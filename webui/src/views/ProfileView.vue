@@ -4,7 +4,7 @@
       <h2 class="mb-5 text-center display-4">Il tuo profilo</h2>
       <form v-if="user" class="text-center" @submit.prevent>
         <div class="d-flex flex-column align-items-center mb-4">
-          <img :src="user.profilePicture" alt="Profile" width="150" height="150" class="rounded-circle mb-4 shadow" />
+          <img :src="user.profilePicture" alt="Profile" width="150" height="150" class="rounded-circle mb-4 shadow">
           <div class="fs-2 fw-bold mb-2">{{ user.username }}</div>
         </div>
         <div class="mb-4">
@@ -16,7 +16,7 @@
         <div class="mb-4">
           <label class="form-label fs-5">Cambia Username</label>
           <div class="input-group">
-            <input v-model="newUsername" class="form-control form-control-lg" placeholder="Nuovo username" />
+            <input v-model="newUsername" class="form-control form-control-lg" placeholder="Nuovo username">
             <button type="button" class="btn btn-primary" @click="setMyUserName">Cambia</button>
           </div>
         </div>
@@ -25,7 +25,7 @@
         <div class="mb-4">
           <label class="form-label fs-5">Cambia Immagine Profilo</label>
           <div class="input-group">
-            <input v-model="newProfilePicture" class="form-control form-control-lg" placeholder="Nuovo URL immagine" />
+            <input v-model="newProfilePicture" class="form-control form-control-lg" placeholder="Nuovo URL immagine">
             <button type="button" class="btn btn-primary" @click="setMyPhoto">Cambia</button>
           </div>
         </div>
@@ -58,12 +58,12 @@ export default {
   methods: {
     async getUser() {
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/users/${userId}`, {
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        this.user = await res.json();
-      } else {
+      try {
+        const res = await this.$axios.get(`/users/${userId}`, {
+          headers: { Authorization: userId }
+        });
+        this.user = res.data;
+      } catch (err) {
         this.user = null;
         this.message = "Utente non trovato, effettua di nuovo il login.";
         this.error = true;
@@ -78,18 +78,16 @@ export default {
         return;
       }
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/users/${userId}/photo`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: userId },
-        body: JSON.stringify({ photoUrl: this.newProfilePicture })
-      });
-      const data = await res.json();
-      if (res.ok) {
+      try {
+        const res = await this.$axios.patch(`/users/${userId}/photo`, 
+          { photoUrl: this.newProfilePicture },
+          { headers: { Authorization: userId } }
+        );
         this.message = "Immagine profilo aggiornata!";
         this.user.profilePicture = this.newProfilePicture;
         this.newProfilePicture = "";
-      } else {
-        this.message = data.message || "Errore";
+      } catch (err) {
+        this.message = err.response?.data?.message || "Errore";
         this.error = true;
       }
     },
@@ -101,27 +99,24 @@ export default {
         this.error = true;
         return;
       }
-      // Controllo frontend: non permettere di inserire lo stesso username
       if (this.newUsername === this.user.username) {
         this.message = "Hai già questo username";
         this.error = true;
         return;
       }
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: userId },
-        body: JSON.stringify({ newName: this.newUsername })
-      });
-      const data = await res.json();
-      if (res.ok) {
+      try {
+        const res = await this.$axios.patch(`/users/${userId}`, 
+          { newName: this.newUsername },
+          { headers: { Authorization: userId } }
+        );
         this.message = "Username aggiornato!";
         localStorage.setItem("username", this.newUsername);
         this.user.username = this.newUsername;
         this.newUsername = "";
         await this.getUser();
-      } else {
-        this.message = data.message || "Errore";
+      } catch (err) {
+        this.message = err.response?.data?.message || "Errore";
         this.error = true;
       }
     }

@@ -3,9 +3,9 @@
     <!-- Bottone per aggiungere reazione -->
     <button 
       class="btn btn-sm btn-light p-1"
-      @click="modalOpen = true"
       title="Aggiungi reazione"
       style="font-size: 1.2rem;"
+      @click="modalOpen = true"
     >
       😊
     </button>
@@ -18,8 +18,8 @@
         class="reaction-badge"
         :class="{ 'user-reacted': userHasReacted(group) }"
         :title="getReactionTooltip(group)"
-        @click="userHasReacted(group) ? uncommentMessage() : null"
         style="cursor: pointer;"
+        @click="userHasReacted(group) ? uncommentMessage() : null"
       >
         {{ emoji }} <span class="reaction-count">{{ group.length }}</span>
       </span>
@@ -78,47 +78,29 @@ export default {
   methods: {
     async commentMessage(emoji) {
       try {
-        const response = await fetch(
-          `${__API_URL__}/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
-          {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json", 
-              Authorization: this.userId 
-            },
-            body: JSON.stringify({ emoji }),
-          }
+        await this.$axios.post(
+          `/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
+          { emoji },
+          { headers: { Authorization: this.userId } }
         );
-        if (response.ok) {
-          this.modalOpen = false;
-          this.$emit('refresh');
-        } else {
-          console.error('Errore nell\'aggiunta della reazione');
-        }
+        this.modalOpen = false;
+        this.$emit('refresh');
       } catch (error) {
-        console.error('Errore di rete:', error);
+        console.error('Errore nell\'aggiunta della reazione', error);
       }
     },
     async uncommentMessage() {
       try {
-        const response = await fetch(
-          `${__API_URL__}/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
-          {
-            method: "DELETE",
-            headers: { Authorization: this.userId }
-          }
+        await this.$axios.delete(
+          `/conversations/${this.conversationId}/messages/${this.message.id}/reactions`,
+          { headers: { Authorization: this.userId } }
         );
-        if (response.ok) {
-          this.$emit('refresh');
-        } else {
-          console.error('Errore nella rimozione della reazione');
-        }
+        this.$emit('refresh');
       } catch (error) {
-        console.error('Errore di rete:', error);
+        console.error('Errore nella rimozione della reazione', error);
       }
     },
     getReactionTooltip(reactionGroup) {
-      // Mostra SOLO username degli utenti che hanno reagito
       return reactionGroup.map(r => r.user.username).join(', ');
     },
     userHasReacted(reactionGroup) {

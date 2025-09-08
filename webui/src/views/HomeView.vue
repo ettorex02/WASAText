@@ -1,214 +1,219 @@
 <template>
-    <div class="d-flex" style="height: 100vh;">
-        <!-- Sidebar -->
-        <div class="bg-light p-3" style="width: 350px; min-width: 250px; max-width: 420px; border-right: 0; box-sizing: border-box;">
-            <!-- Barra di ricerca utenti con dropdown Bootstrap -->
-            <div class="dropdown w-100">
-                <input
-                    v-model="search"
-                    @input="searchUsers"
-                    class="form-control mb-3 dropdown-toggle"
-                    placeholder="Cerca utenti per username..."
-                    autocomplete="off"
-                    data-bs-toggle="dropdown"
-                    @focus="dropdownOpen = true"
-                    @blur="closeDropdown"
-                />
-                <ul
-                    class="dropdown-menu w-100"
-                    :class="{ show: dropdownOpen && searchResults.length }"
-                    style="max-height: 300px; overflow-y: auto;"
-                >
-                    <li
-                        v-for="user in searchResults"
-                        :key="user.username"
-                        class="dropdown-item d-flex align-items-center"
-                        @mousedown.prevent="startConversation(user)"
-                    >
-                        <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2" />
-                        <span>{{ user.username }}</span>
-                    </li>
-                </ul>
-            </div>
+  <div class="d-flex" style="height: 100vh;">
+    <!-- Sidebar -->
+    <div class="bg-light p-3" style="width: 350px; min-width: 250px; max-width: 420px; border-right: 0; box-sizing: border-box;">
+      <!-- Barra di ricerca utenti con dropdown Bootstrap -->
+      <div class="dropdown w-100">
+        <input
+          v-model="search"
+          class="form-control mb-3 dropdown-toggle"
+          placeholder="Cerca utenti per username..."
+          autocomplete="off"
+          data-bs-toggle="dropdown"
+          @input="searchUsers"
+          @focus="dropdownOpen = true"
+          @blur="closeDropdown"
+        >
+        <ul
+          class="dropdown-menu w-100"
+          :class="{ show: dropdownOpen && searchResults.length }"
+          style="max-height: 300px; overflow-y: auto;"
+        >
+          <li
+            v-for="user in searchResults"
+            :key="user.username"
+            class="dropdown-item d-flex align-items-center"
+            @mousedown.prevent="startConversation(user)"
+          >
+            <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2">
+            <span>{{ user.username }}</span>
+          </li>
+        </ul>
+      </div>
 
-            <!-- Qui la lista delle conversazioni -->
-            <ul class="list-group mt-3">
-                <!-- Conversazioni 1:1 -->
-                <li
-                    v-for="conv in conversations"
-                    :key="'chat-' + conv.id"
-                    class="list-group-item list-group-item-action d-flex align-items-center"
-                    :class="{ 'selected-conv': openConversation && openConversation.id === conv.id }"
-                    @click="openConv(conv)"
-                    style="cursor:pointer;"
-                >
-                    <img :src="conv.profilePicture" alt="profile" width="40" class="rounded-circle me-2" />
-                    <div class="flex-grow-1">
-                        <div class="fw-bold">{{ conv.username }}</div>
-                        <div class="text-muted small">
-                            {{ conv.lastMessage && conv.lastMessage.length > 12 ? conv.lastMessage.slice(0, 12) + '…' : conv.lastMessage }}
-                        </div>
-                    </div>
-                    <div class="text-end small text-muted ms-2">
-                        {{ conv.lastMessageTime }}
-                    </div>
-                </li>
-                
-                <!-- Gruppi -->
-                <li
-                    v-for="group in groups"
-                    :key="'group-' + group.id"
-                    class="list-group-item list-group-item-action d-flex align-items-center"
-                    :class="{ 'selected-conv': openConversation && openConversation.id === group.id }"
-                    @click="openConv({ ...group, username: group.name, profilePicture: group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png' })"
-                    style="cursor:pointer;"
-                >
-                    <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="40" class="rounded-circle me-2" />
-                    <div class="flex-grow-1">
-                        <div class="fw-bold">👥 {{ group.name }}</div>
-                        <div class="text-muted small">
-                            <!-- Mostra anteprima solo se la logica backend la fornisce, altrimenti lascia vuoto -->
-                            {{ group.lastMessage && group.lastMessage.length > 12 ? group.lastMessage.slice(0, 12) + '…' : group.lastMessage }}
-                        </div>
-                    </div>
-                    <div class="text-end small text-muted ms-2">
-                        {{ group.lastMessageTime }}
-                    </div>
-                </li>
-            </ul>
-
-            <!-- In fondo alla sidebar, subito dopo </ul> -->
-            <section class="create-group-section mt-4">
-              <hr />
-              <button class="btn btn-success w-100" @click="openCreateGroupModal = true">
-                + Create Group
-              </button>
-            </section>
-
-            <!-- Modale per creare gruppo -->
-            <GroupModal
-              :openCreateGroupModal="openCreateGroupModal"
-              :editGroupMode="editGroupMode"
-              :editGroupId="editGroupId"
-              @close-create-group-modal="closeCreateGroupModal"
-              @refresh-groups="loadAll"
-            />
-        </div>
-
-        <!-- Main content -->
-        <div class="flex-grow-1">
-            <div style="position: absolute; top: 80px; right: 30px; z-index: 10;">
-                <button class="btn btn-outline-primary me-2" @click="goToProfile">Profilo</button>
-                <button class="btn btn-danger" @click="logout">Logout</button>
-            </div>
-
-            <div v-if="successMsg" class="alert alert-success text-center" style="max-width: 500px; margin: 0 auto 20px auto;">
-                {{ successMsg }}
-            </div>
-
-            <ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
-
-            <!-- Main content -->
-            <div class="flex-grow-1 d-flex flex-column justify-content-center" style="height: 100vh;">
-                <div
-                    v-if="openConversation"
-                    class="chat-box d-flex flex-column"
-                >
-                    <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
-                      <h5 class="mb-0">{{ openConversation.username }}</h5>
-                    </div>
-                    <!-- Sezione messaggi scrollabile -->
-                    <div class="flex-grow-1 overflow-auto p-3 messages-area">
-                        <div v-for="msg in messages" :key="msg.id"
-                            class="d-flex mb-3 align-items-center"
-                            :class="isMyMessage(msg) ? '' : 'flex-row-reverse'">
-                            <img :src="msg.sender.profilePicture" alt="profile" width="44" height="44" class="rounded-circle mx-2" />
-                            <div>
-                                <!-- Mostra il nome SOLO se il messaggio NON è mio -->
-                                <div
-                                  v-if="!isMyMessage(msg)"
-                                  class="fw-bold mb-1"
-                                  style="font-size: 1rem;">
-                                  {{ msg.sender.displayName || msg.sender.username }}
-                                </div>
-                                <div :class="isMyMessage(msg) ? 'msg-sent' : 'msg-received'"
-                                    style="font-size: 1.3rem; max-width: 520px; word-break: break-word;">
-                                    <span v-if="msg.is_forwarded || msg.isForwarded" class="badge bg-warning text-dark mb-1" style="font-size: 0.9rem;">
-                                        Inoltrato
-                                    </span>
-                                    {{ msg.content }}
-                                    <div class="small text-muted mt-1 d-flex align-items-center">
-                                        <span>{{ msg.timestamp }}</span>
-                                        <span v-if="isMyMessage(msg)" :class="getStatusClass(msg.status)" style="margin-left: 8px;">
-                                            {{ getStatusIcon(msg.status) }}
-                                        </span>
-                                        <button v-if="isMyMessage(msg)" @click="deleteMessage(msg)" class="btn btn-sm btn-link text-danger ms-2" title="Elimina">
-                                            🗑️
-                                        </button>
-                                        <button
-                                          @click="openForwardModal(msg)"
-                                          class="btn btn-sm btn-link text-primary ms-2"
-                                          title="Inoltra"
-                                        >
-                                          ⏩
-                                        </button>
-                                    </div>
-                                </div>
-                                <MessageReactions
-                                  :message="msg"
-                                  :conversationId="openConversation.id"
-                                  @refresh="getConversation(openConversation.id)"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Barra invio messaggi SEMPRE visibile in basso -->
-                    <form @submit.prevent="sendMessage" class="d-flex border-top p-3 bg-white rounded-bottom">
-                        <input v-model="newMessage" class="form-control me-2" placeholder="Scrivi un messaggio..." required />
-                        <button class="btn btn-primary" type="submit">Invia</button>
-                    </form>
-                </div>
-                <div v-else class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
-                    Nessuna conversazione trovata. Inizia a cercare utenti per iniziare una chat!
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal per inoltrare messaggio -->
-        <div v-if="forwardModalOpen" class="modal-backdrop">
-          <div class="modal-dialog">
-            <div class="modal-content p-3">
-              <h5>Scegli la chat dove inoltrare</h5>
-              <ul class="list-group">
-                <!-- Conversazioni 1:1 -->
-                <li
-                  v-for="conv in conversations"
-                  :key="'chat-' + conv.id"
-                  class="list-group-item list-group-item-action"
-                  @click="forwardMessage(conv.id)"
-                  style="cursor:pointer;"
-                >
-                  <img :src="conv.profilePicture" alt="profile" width="32" class="rounded-circle me-2" />
-                  {{ conv.username }}
-                </li>
-                
-                <!-- Gruppi -->
-                <li
-                  v-for="group in groups"
-                  :key="'group-' + group.id"
-                  class="list-group-item list-group-item-action"
-                  @click="forwardMessage(group.id)"
-                  style="cursor:pointer;"
-                >
-                  <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="32" class="rounded-circle me-2" />
-                  👥 {{ group.name }}
-                </li>
-              </ul>
-              <button class="btn btn-secondary mt-3" @click="closeForwardModal">Annulla</button>
+      <!-- Qui la lista delle conversazioni -->
+      <ul class="list-group mt-3">
+        <!-- Conversazioni 1:1 -->
+        <li
+          v-for="conv in conversations"
+          :key="'chat-' + conv.id"
+          class="list-group-item list-group-item-action d-flex align-items-center"
+          :class="{ 'selected-conv': openConversation && openConversation.id === conv.id }"
+          style="cursor:pointer;"
+          @click="openConv(conv)"
+        >
+          <img :src="conv.profilePicture" alt="profile" width="40" class="rounded-circle me-2">
+          <div class="flex-grow-1">
+            <div class="fw-bold">{{ conv.username }}</div>
+            <div class="text-muted small">
+              {{ conv.lastMessage && conv.lastMessage.length > 12 ? conv.lastMessage.slice(0, 12) + '…' : conv.lastMessage }}
             </div>
           </div>
-        </div>
+          <div class="text-end small text-muted ms-2">
+            {{ conv.lastMessageTime }}
+          </div>
+        </li>
+                
+        <!-- Gruppi -->
+        <li
+          v-for="group in groups"
+          :key="'group-' + group.id"
+          class="list-group-item list-group-item-action d-flex align-items-center"
+          :class="{ 'selected-conv': openConversation && openConversation.id === group.id }"
+          style="cursor:pointer;"
+          @click="openConv({ ...group, username: group.name, profilePicture: group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png' })"
+        >
+          <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="40" class="rounded-circle me-2">
+          <div class="flex-grow-1">
+            <div class="fw-bold">👥 {{ group.name }}</div>
+            <div class="text-muted small">
+              <!-- Mostra anteprima solo se la logica backend la fornisce, altrimenti lascia vuoto -->
+              {{ group.lastMessage && group.lastMessage.length > 12 ? group.lastMessage.slice(0, 12) + '…' : group.lastMessage }}
+            </div>
+          </div>
+          <div class="text-end small text-muted ms-2">
+            {{ group.lastMessageTime }}
+          </div>
+        </li>
+      </ul>
+
+      <!-- In fondo alla sidebar, subito dopo </ul> -->
+      <section class="create-group-section mt-4">
+        <hr>
+        <button class="btn btn-success w-100" @click="openCreateGroupModal = true">
+          + Create Group
+        </button>
+      </section>
+
+      <!-- Modale per creare gruppo -->
+      <GroupModal
+        :open-create-group-modal="openCreateGroupModal"
+        :edit-group-mode="editGroupMode"
+        :edit-group-id="editGroupId"
+        @close-create-group-modal="closeCreateGroupModal"
+        @refresh-groups="loadAll"
+      />
     </div>
+
+    <!-- Main content -->
+    <div class="flex-grow-1">
+      <div style="position: absolute; top: 80px; right: 30px; z-index: 10;">
+        <button class="btn btn-outline-primary me-2" @click="goToProfile">Profilo</button>
+        <button class="btn btn-danger" @click="logout">Logout</button>
+      </div>
+
+      <div v-if="successMsg" class="alert alert-success text-center" style="max-width: 500px; margin: 0 auto 20px auto;">
+        {{ successMsg }}
+      </div>
+
+      <ErrorMsg v-if="errormsg" :msg="errormsg" />
+
+      <!-- Main content -->
+      <div class="flex-grow-1 d-flex flex-column justify-content-center" style="height: 100vh;">
+        <div
+          v-if="openConversation"
+          class="chat-box d-flex flex-column"
+        >
+          <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
+            <h5 class="mb-0">{{ openConversation.username }}</h5>
+          </div>
+          <!-- Sezione messaggi scrollabile -->
+          <div class="flex-grow-1 overflow-auto p-3 messages-area">
+            <div
+              v-for="msg in messages" :key="msg.id"
+              class="d-flex mb-3 align-items-center"
+              :class="isMyMessage(msg) ? '' : 'flex-row-reverse'"
+            >
+              <img :src="msg.sender.profilePicture" alt="profile" width="44" height="44" class="rounded-circle mx-2">
+              <div>
+                <!-- Mostra il nome SOLO se il messaggio NON è mio -->
+                <div
+                  v-if="!isMyMessage(msg)"
+                  class="fw-bold mb-1"
+                  style="font-size: 1rem;"
+                >
+                  {{ msg.sender.displayName || msg.sender.username }}
+                </div>
+                <div
+                  :class="isMyMessage(msg) ? 'msg-sent' : 'msg-received'"
+                  style="font-size: 1.3rem; max-width: 520px; word-break: break-word;"
+                >
+                  <span v-if="msg.is_forwarded || msg.isForwarded" class="badge bg-warning text-dark mb-1" style="font-size: 0.9rem;">
+                    Inoltrato
+                  </span>
+                  {{ msg.content }}
+                  <div class="small text-muted mt-1 d-flex align-items-center">
+                    <span>{{ msg.timestamp }}</span>
+                    <span v-if="isMyMessage(msg)" :class="getStatusClass(msg.status)" style="margin-left: 8px;">
+                      {{ getStatusIcon(msg.status) }}
+                    </span>
+                    <button v-if="isMyMessage(msg)" class="btn btn-sm btn-link text-danger ms-2" title="Elimina" @click="deleteMessage(msg)">
+                      🗑️
+                    </button>
+                    <button
+                      class="btn btn-sm btn-link text-primary ms-2"
+                      title="Inoltra"
+                      @click="openForwardModal(msg)"
+                    >
+                      ⏩
+                    </button>
+                  </div>
+                </div>
+                <MessageReactions
+                  :message="msg"
+                  :conversation-id="openConversation.id"
+                  @refresh="getConversation(openConversation.id)"
+                />
+              </div>
+            </div>
+          </div>
+          <!-- Barra invio messaggi SEMPRE visibile in basso -->
+          <form class="d-flex border-top p-3 bg-white rounded-bottom" @submit.prevent="sendMessage">
+            <input v-model="newMessage" class="form-control me-2" placeholder="Scrivi un messaggio..." required>
+            <button class="btn btn-primary" type="submit">Invia</button>
+          </form>
+        </div>
+        <div v-else class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+          Nessuna conversazione trovata. Inizia a cercare utenti per iniziare una chat!
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal per inoltrare messaggio -->
+    <div v-if="forwardModalOpen" class="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-content p-3">
+          <h5>Scegli la chat dove inoltrare</h5>
+          <ul class="list-group">
+            <!-- Conversazioni 1:1 -->
+            <li
+              v-for="conv in conversations"
+              :key="'chat-' + conv.id"
+              class="list-group-item list-group-item-action"
+              style="cursor:pointer;"
+              @click="forwardMessage(conv.id)"
+            >
+              <img :src="conv.profilePicture" alt="profile" width="32" class="rounded-circle me-2">
+              {{ conv.username }}
+            </li>
+                
+            <!-- Gruppi -->
+            <li
+              v-for="group in groups"
+              :key="'group-' + group.id"
+              class="list-group-item list-group-item-action"
+              style="cursor:pointer;"
+              @click="forwardMessage(group.id)"
+            >
+              <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="32" class="rounded-circle me-2">
+              👥 {{ group.name }}
+            </li>
+          </ul>
+          <button class="btn btn-secondary mt-3" @click="closeForwardModal">Annulla</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -249,6 +254,17 @@ export default {
       );
     }
   },
+  mounted() {
+    this.loadAll();
+    this.polling = setInterval(this.loadAll, 6000);
+    if (this.$route.query.msg) {
+      this.successMsg = this.$route.query.msg;
+      this.$router.replace({ path: this.$route.path, query: {} });
+    }
+  },
+  beforeUnmount() {
+    clearInterval(this.polling);
+  },
   methods: {
     goToProfile() {
       this.$router.push('/profile');
@@ -276,14 +292,14 @@ export default {
       }
       const userId = localStorage.getItem("userId");
       const myUsername = localStorage.getItem("username");
-      const res = await fetch(`${__API_URL__}/search/users?q=${encodeURIComponent(this.search)}`, {
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        const results = await res.json();
+      try {
+        const res = await this.$axios.get(`/search/users?q=${encodeURIComponent(this.search)}`, {
+          headers: { Authorization: userId }
+        });
+        const results = res.data;
         this.searchResults = results.filter(u => u.username !== myUsername);
         this.dropdownOpen = !!this.searchResults.length;
-      } else {
+      } catch {
         this.searchResults = [];
         this.dropdownOpen = false;
       }
@@ -293,34 +309,34 @@ export default {
     },
     async startConversation(user) {
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/conversations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: userId },
-        body: JSON.stringify({ userId: user.id })
-      });
-      const data = await res.json();
-      if (res.ok && data.conversationId) {
-        this.search = "";
-        this.searchResults = [];
-        this.dropdownOpen = false;
-        await this.loadAll();
-        const conv = this.conversations.find(c => c.id === data.conversationId);
-        if (conv) {
-          this.openConv(conv);
+      try {
+        const res = await this.$axios.post("/conversations", { userId: user.id }, {
+          headers: { "Content-Type": "application/json", Authorization: userId }
+        });
+        const data = res.data;
+        if (data.conversationId) {
+          this.search = "";
+          this.searchResults = [];
+          this.dropdownOpen = false;
+          await this.loadAll();
+          const conv = this.conversations.find(c => c.id === data.conversationId);
+          if (conv) {
+            this.openConv(conv);
+          }
         }
-      }
+      } catch {}
     },
     async getMyConversations() {
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/conversations`, {
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        this.conversations = await res.json();
+      try {
+        const res = await this.$axios.get("/conversations", {
+          headers: { Authorization: userId }
+        });
+        this.conversations = res.data;
         if (!this.openConversation && this.conversations.length > 0) {
           this.openConv(this.conversations[0]);
         }
-      } else {
+      } catch {
         this.conversations = [];
       }
     },
@@ -343,54 +359,60 @@ export default {
     },
     async getConversation(conversationId) {
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/conversations/${conversationId}/messages`, {
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        const msgs = await res.json();
+      try {
+        const res = await this.$axios.get(`/conversations/${conversationId}/messages`, {
+          headers: { Authorization: userId }
+        });
+        const msgs = res.data;
         for (const msg of msgs) {
-          const reactionRes = await fetch(
-            `${__API_URL__}/conversations/${conversationId}/messages/${msg.id}/reactions`, 
-            { headers: { Authorization: userId } }
-          );
-          msg.reactions = reactionRes.ok ? await reactionRes.json() : [];
+          try {
+            const reactionRes = await this.$axios.get(
+              `/conversations/${conversationId}/messages/${msg.id}/reactions`,
+              { headers: { Authorization: userId } }
+            );
+            msg.reactions = reactionRes.data;
+          } catch {
+            msg.reactions = [];
+          }
         }
         this.messages = msgs;
-      } else {
+      } catch {
         this.messages = [];
       }
     },
     async sendMessage() {
       if (!this.newMessage.trim() || !this.openConversation) return;
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/conversations/${this.openConversation.id}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: userId },
-        body: JSON.stringify({ content: this.newMessage, mediaType: "text", isForwarded: false })
-      });
-      if (res.ok) {
+      try {
+        await this.$axios.post(`/conversations/${this.openConversation.id}/messages`, {
+          content: this.newMessage,
+          mediaType: "text",
+          isForwarded: false
+        }, {
+          headers: { "Content-Type": "application/json", Authorization: userId }
+        });
         this.newMessage = "";
         await this.getConversation(this.openConversation.id);
-      }
+      } catch {}
     },
     async markMessagesRead() {
       if (!this.openConversation) return;
       const userId = localStorage.getItem("userId");
-      await fetch(`${__API_URL__}/conversations/${this.openConversation.id}/messages/read`, {
-        method: "PATCH",
-        headers: { Authorization: userId }
-      });
+      try {
+        await this.$axios.patch(`/conversations/${this.openConversation.id}/messages/read`, {}, {
+          headers: { Authorization: userId }
+        });
+      } catch {}
     },
     async deleteMessage(msg) {
       if (!confirm("Sei sicuro di voler eliminare questo messaggio?")) return;
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/conversations/${msg.conversation_id}/messages/${msg.id}`, {
-        method: "DELETE",
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
+      try {
+        await this.$axios.delete(`/conversations/${msg.conversation_id}/messages/${msg.id}`, {
+          headers: { Authorization: userId }
+        });
         this.messages = this.messages.filter(m => m.id !== msg.id);
-      } else {
+      } catch {
         alert("Errore durante l'eliminazione del messaggio.");
       }
     },
@@ -417,20 +439,17 @@ export default {
     async forwardMessage(targetConversationId) {
       if (!this.forwardMsg) return;
       const userId = localStorage.getItem("userId");
-      const res = await fetch(
-        `${__API_URL__}/conversations/${this.forwardMsg.conversation_id}/messages/${this.forwardMsg.id}/forward`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: userId },
-          body: JSON.stringify({ targetConversationId }),
-        }
-      );
-      if (res.ok) {
+      try {
+        await this.$axios.post(
+          `/conversations/${this.forwardMsg.conversation_id}/messages/${this.forwardMsg.id}/forward`,
+          { targetConversationId },
+          { headers: { "Content-Type": "application/json", Authorization: userId } }
+        );
         this.messages = this.messages.filter(m => m.id !== this.forwardMsg.id);
         this.successMsg = "Messaggio inoltrato!";
         setTimeout(() => { this.successMsg = null; }, 1000);
         this.closeForwardModal();
-      } else {
+      } catch {
         alert("Errore durante l'inoltro del messaggio.");
       }
     },
@@ -444,12 +463,12 @@ export default {
     },
     async listGroups() {
       const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/groups`, {
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        this.groups = await res.json();
-      } else {
+      try {
+        const res = await this.$axios.get("/groups", {
+          headers: { Authorization: userId }
+        });
+        this.groups = res.data;
+      } catch {
         this.groups = [];
       }
     },
@@ -458,17 +477,6 @@ export default {
       this.editGroupMode = false;
       this.editGroupId = null;
     }
-  },
-  mounted() {
-    this.loadAll();
-    this.polling = setInterval(this.loadAll, 6000);
-    if (this.$route.query.msg) {
-      this.successMsg = this.$route.query.msg;
-      this.$router.replace({ path: this.$route.path, query: {} });
-    }
-  },
-  beforeUnmount() {
-    clearInterval(this.polling);
   }
 }
 </script>

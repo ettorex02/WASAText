@@ -8,15 +8,15 @@
       <form @submit.prevent="doLogin">
         <div class="mb-3">
           <label class="form-label">Username</label>
-          <input v-model="name" class="form-control form-control-lg" required minlength="3" maxlength="16" />
+          <input v-model="name" class="form-control form-control-lg" required minlength="3" maxlength="16">
         </div>
-        <div class="mb-3" v-if="isRegister">
+        <div v-if="isRegister" class="mb-3">
           <label class="form-label">Display Name</label>
-          <input v-model="displayName" class="form-control form-control-lg" required />
+          <input v-model="displayName" class="form-control form-control-lg" required>
         </div>
-        <div class="mb-3" v-if="isRegister">
+        <div v-if="isRegister" class="mb-3">
           <label class="form-label">Profile Picture URL</label>
-          <input v-model="profilePicture" class="form-control form-control-lg" required />
+          <input v-model="profilePicture" class="form-control form-control-lg" required>
         </div>
         <div class="mb-3 d-flex justify-content-between align-items-center">
           <button type="submit" class="btn btn-primary btn-lg w-50">{{ isRegister ? 'Registrati' : 'Login' }}</button>
@@ -50,28 +50,23 @@ export default {
         ? { name: this.name, displayName: this.displayName, profilePicture: this.profilePicture }
         : { name: this.name };
       try {
-        const res = await fetch(`${__API_URL__}/session`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        let data = {};
-        try {
-          data = await res.json();
-        } catch {
-          data = { message: "Errore di rete o risposta non valida" };
-        }
-        this.message = data.message || (res.ok ? "Successo!" : "Errore");
-        this.error = !res.ok;
-        if (res.ok && data.user) {
+        const res = await this.$axios.post('/session', payload);
+        const data = res.data;
+        this.message = data.message || "Successo!";
+        this.error = false;
+        if (data.user) {
           localStorage.setItem("userId", data.user.id);
           localStorage.setItem("username", data.user.username);
           localStorage.setItem("displayName", data.user.displayName);
           localStorage.setItem("profilePicture", data.user.profilePicture);
           this.$router.push("/home");
         }
-      } catch {
-        this.message = "Errore di rete";
+      } catch (err) {
+        let msg = "Errore di rete";
+        if (err.response && err.response.data && err.response.data.message) {
+          msg = err.response.data.message;
+        }
+        this.message = msg;
         this.error = true;
       }
     },

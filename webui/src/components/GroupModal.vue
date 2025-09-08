@@ -6,25 +6,25 @@
         <form @submit.prevent="editGroupMode ? submitEditGroup() : submitGroup()">
           <div class="mb-3">
             <label class="form-label">Nome gruppo</label>
-            <input v-model="newGroupName" class="form-control" required minlength="3" maxlength="16" />
+            <input v-model="newGroupName" class="form-control" required minlength="3" maxlength="16">
           </div>
           <div class="mb-3">
             <label class="form-label">URL foto gruppo (opzionale)</label>
-            <input v-model="newGroupPhoto" class="form-control" placeholder="https://..." />
+            <input v-model="newGroupPhoto" class="form-control" placeholder="https://...">
           </div>
           <div class="mb-3">
             <label class="form-label">Aggiungi membri</label>
             <div class="dropdown w-100">
               <input
                 v-model="searchUser"
-                @input="searchUsersGroup"
                 class="form-control mb-2 dropdown-toggle"
                 placeholder="Cerca utenti per username..."
                 autocomplete="off"
                 data-bs-toggle="dropdown"
+                @input="searchUsersGroup"
                 @focus="dropdownOpenGroup = true"
                 @blur="closeDropdownGroup"
-              />
+              >
               <ul
                 class="dropdown-menu w-100"
                 :class="{ show: dropdownOpenGroup && searchResultsGroup.length }"
@@ -36,7 +36,7 @@
                   class="dropdown-item d-flex align-items-center"
                   @mousedown.prevent="addToGroup(user)"
                 >
-                  <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2" />
+                  <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2">
                   <span>{{ user.username }}</span>
                 </li>
               </ul>
@@ -48,7 +48,7 @@
                 class="badge bg-primary me-2"
                 style="font-size:1rem;"
               >
-                <img :src="user.profilePicture" alt="profile" width="20" height="20" class="rounded-circle me-1" />
+                <img :src="user.profilePicture" alt="profile" width="20" height="20" class="rounded-circle me-1">
                 {{ user.username }}
                 <span class="ms-1" style="cursor:pointer;" @click="removeMemberFromGroup(user.username)">×</span>
               </span>
@@ -95,16 +95,16 @@ export default {
       }
       const userId = localStorage.getItem("userId");
       const myUsername = localStorage.getItem("username");
-      const res = await fetch(`${__API_URL__}/search/users?q=${encodeURIComponent(this.searchUser)}`, {
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        const results = await res.json();
+      try {
+        const res = await this.$axios.get(`/search/users?q=${encodeURIComponent(this.searchUser)}`, {
+          headers: { Authorization: userId }
+        });
+        const results = res.data;
         this.searchResultsGroup = results.filter(
           u => u.username !== myUsername && !this.groupMembers.some(m => m.username === u.username)
         );
         this.dropdownOpenGroup = !!this.searchResultsGroup.length;
-      } else {
+      } catch (e) {
         this.searchResultsGroup = [];
         this.dropdownOpenGroup = false;
       }
@@ -155,23 +155,13 @@ export default {
           members: membersArr
         };
         if (this.newGroupPhoto) body.photo = this.newGroupPhoto;
-        const res = await fetch(`${__API_URL__}/groups`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: userId
-          },
-          body: JSON.stringify(body)
+        await this.$axios.post('/groups', body, {
+          headers: { Authorization: userId }
         });
-        if (res.ok) {
-          this.closeCreateGroupModal();
-          this.$emit('refresh-groups');
-        } else {
-          const data = await res.json();
-          this.groupError = data.message || "Errore creazione gruppo";
-        }
+        this.closeCreateGroupModal();
+        this.$emit('refresh-groups');
       } catch (e) {
-        this.groupError = "Errore di rete";
+        this.groupError = e.response?.data?.message || "Errore creazione gruppo";
       }
     },
     async submitEditGroup() {
@@ -181,19 +171,20 @@ export default {
         return;
       }
       const userId = localStorage.getItem("userId");
-      await fetch(`${__API_URL__}/groups/${this.editGroupId}/name`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: userId },
-        body: JSON.stringify({ name: this.newGroupName })
-      });
-      await fetch(`${__API_URL__}/groups/${this.editGroupId}/photo`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: userId },
-        body: JSON.stringify({ photo: this.newGroupPhoto })
-      });
-      // Qui puoi aggiungere la logica per aggiungere nuovi membri se serve
-      this.closeCreateGroupModal();
-      this.$emit('refresh-groups');
+      try {
+        await this.$axios.patch(`/groups/${this.editGroupId}/name`,
+          { name: this.newGroupName },
+          { headers: { Authorization: userId } }
+        );
+        await this.$axios.patch(`/groups/${this.editGroupId}/photo`,
+          { photo: this.newGroupPhoto },
+          { headers: { Authorization: userId } }
+        );
+        this.closeCreateGroupModal();
+        this.$emit('refresh-groups');
+      } catch (e) {
+        this.groupError = e.response?.data?.message || "Errore modifica gruppo";
+      }
     }
   }
 }
