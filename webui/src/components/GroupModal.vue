@@ -3,7 +3,7 @@
     <div class="modal-dialog">
       <div class="modal-content p-4">
         <h5>{{ editGroupMode ? 'Modifica gruppo' : 'Crea nuovo gruppo' }}</h5>
-        <form @submit.prevent="editGroupMode ? submitEditGroup() : submitGroup()">
+        <form @submit.prevent="editGroupMode ? submitEditGroup() : addToGroup()">
           <div class="mb-3">
             <label class="form-label">Nome gruppo</label>
             <input v-model="newGroupName" class="form-control" required minlength="3" maxlength="16">
@@ -34,7 +34,7 @@
                   v-for="user in searchResultsGroup"
                   :key="user.username"
                   class="dropdown-item d-flex align-items-center"
-                  @mousedown.prevent="addToGroup(user)"
+                  @mousedown.prevent="addFirstMembers(user)"
                 >
                   <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2">
                   <span>{{ user.username }}</span>
@@ -112,7 +112,7 @@ export default {
     closeDropdownGroup() {
       setTimeout(() => { this.dropdownOpenGroup = false; }, 150);
     },
-    addToGroup(user) {
+    addFirstMembers(user) {
       if (!this.groupMembers.some(u => u.username === user.username)) {
         this.groupMembers.push(user);
       }
@@ -133,7 +133,8 @@ export default {
       this.searchResultsGroup = [];
       this.dropdownOpenGroup = false;
     },
-    async submitGroup() {
+    // operationId: addToGroup (creazione)
+    async addToGroup() {
       this.groupError = "";
       if (!this.newGroupName || this.newGroupName.length < 3 || this.newGroupName.length > 16) {
         this.groupError = "Il nome deve essere tra 3 e 16 caratteri";
@@ -164,27 +165,22 @@ export default {
         this.groupError = e.response?.data?.message || "Errore creazione gruppo";
       }
     },
-    async submitEditGroup() {
-      this.groupError = "";
-      if (!this.newGroupName || this.newGroupName.length < 3 || this.newGroupName.length > 16) {
-        this.groupError = "Il nome deve essere tra 3 e 16 caratteri";
-        return;
-      }
+    // operationId: setGroupName
+    async setGroupName() {
       const userId = localStorage.getItem("userId");
-      try {
-        await this.$axios.patch(`/groups/${this.editGroupId}/name`,
-          { name: this.newGroupName },
-          { headers: { Authorization: userId } }
-        );
-        await this.$axios.patch(`/groups/${this.editGroupId}/photo`,
-          { photo: this.newGroupPhoto },
-          { headers: { Authorization: userId } }
-        );
-        this.closeCreateGroupModal();
-        this.$emit('refresh-groups');
-      } catch (e) {
-        this.groupError = e.response?.data?.message || "Errore modifica gruppo";
-      }
+      return this.$axios.patch(`/groups/${this.editGroupId}/name`,
+        { name: this.newGroupName },
+        { headers: { Authorization: userId } }
+      );
+    },
+    // operationId: setGroupPhoto
+    async setGroupPhoto() {
+      if (!this.newGroupPhoto) return;
+      const userId = localStorage.getItem("userId");
+      return this.$axios.patch(`/groups/${this.editGroupId}/photo`,
+        { photo: this.newGroupPhoto },
+        { headers: { Authorization: userId } }
+      );
     }
   }
 }
