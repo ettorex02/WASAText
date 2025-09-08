@@ -685,6 +685,47 @@ paths:
         required: true
         schema:
           type: integer
+    patch:
+      summary: Add members to a group
+      description: Add one or more users to an existing group by username.
+      operationId: addGroupMembers
+      tags: [group]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: Usernames to add to the group
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Request body for adding members to a group
+              required: [members]
+              properties:
+                members:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  description: List of usernames to add to the group
+                  items:
+                    type: string
+                    minLength: 3
+                    maxLength: 32
+                    pattern: '^[a-zA-Z0-9_]+$'
+                    description: Username to add to the group
+      responses:
+        '200':
+          description: Members added to the group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
     delete:
       summary: Leave group
       description: Leave a group by removing the current user from it
