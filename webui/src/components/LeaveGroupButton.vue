@@ -18,7 +18,6 @@ export default {
     }
   },
   methods: {
-    // operationId: leaveGroup
     async leaveGroup() {
       if (!confirm("Sei sicuro di voler lasciare questo gruppo?")) return;
       const userId = localStorage.getItem("userId");
@@ -26,7 +25,7 @@ export default {
         await this.$axios.delete(`/groups/${this.groupId}/members`, {
           headers: { Authorization: userId }
         });
-        this.$emit('left');
+        this.$emit('left-group', this.groupId); // Passa l'id del gruppo!
       } catch (e) {
         alert("Errore durante l'uscita dal gruppo.");
       }

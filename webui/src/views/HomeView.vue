@@ -116,6 +116,13 @@
         >
           <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
             <h5 class="mb-0">{{ openConversation.username }}</h5>
+            <!-- Bottone per lasciare il gruppo, visibile solo nelle conversazioni di gruppo -->
+            <div v-if="isGroup" class="ms-auto">
+              <LeaveGroupButton
+                :group-id="openConversation.id"
+                @left-group="handleGroupLeft"
+              />
+            </div>
           </div>
           <!-- Sezione messaggi scrollabile -->
           <div class="flex-grow-1 overflow-auto p-3 messages-area">
@@ -219,9 +226,10 @@
 <script>
 import MessageReactions from '@/components/MessageReactions.vue';
 import GroupModal from '@/components/GroupModal.vue';
+import LeaveGroupButton from '@/components/LeaveGroupButton.vue';
 
 export default {
-  components: { MessageReactions, GroupModal },
+  components: { MessageReactions, GroupModal, LeaveGroupButton },
   data() {
     return {
       errormsg: null,
@@ -476,6 +484,13 @@ export default {
       this.openCreateGroupModal = false;
       this.editGroupMode = false;
       this.editGroupId = null;
+    },
+    handleGroupLeft(groupId) {
+      this.conversations = this.conversations.filter(conv => conv.id !== groupId);
+      if (this.openConversation && this.openConversation.id === groupId) {
+        this.openConversation = null;
+        this.messages = [];
+      }
     }
   }
 }
