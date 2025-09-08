@@ -310,7 +310,7 @@ export default {
         }
       }
     },
-    async getMyConversation() {
+    async getMyConversations() {
       const userId = localStorage.getItem("userId");
       const res = await fetch(`${__API_URL__}/conversations`, {
         headers: { Authorization: userId }
@@ -399,8 +399,8 @@ export default {
       return String(msg.sender.id) === String(myId);
     },
     getStatusIcon(status) {
-      if (status === "read") return "✔✔✔";
-      return "✔✔";
+      if (status === "read") return "✔✔";
+      return "✔";
     },
     getStatusClass(status) {
       if (status === "read") return "text-primary";
@@ -435,7 +435,7 @@ export default {
       }
     },
     async loadAll() {
-      await this.getMyConversation();
+      await this.getMyConversations();
       await this.listGroups();
       if (this.openConversation) {
         await this.getConversation(this.openConversation.id);

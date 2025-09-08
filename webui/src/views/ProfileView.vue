@@ -17,7 +17,7 @@
           <label class="form-label fs-5">Cambia Username</label>
           <div class="input-group">
             <input v-model="newUsername" class="form-control form-control-lg" placeholder="Nuovo username" />
-            <button type="button" class="btn btn-primary" @click="setMyUsername">Cambia</button>
+            <button type="button" class="btn btn-primary" @click="setMyUserName">Cambia</button>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export default {
         this.error = true;
       }
     },
-    async setMyUsername() {
+    async setMyUserName() {
       this.message = "";
       this.error = false;
       if (!this.newUsername || this.newUsername.length < 3) {
