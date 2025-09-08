@@ -105,22 +105,6 @@
                 >
                     <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
                       <h5 class="mb-0">{{ openConversation.username }}</h5>
-                      <div>
-                        <button
-                          v-if="isGroup"
-                          class="btn btn-outline-primary btn-sm me-2"
-                          @click="openEditGroupModal"
-                        >
-                          Edit Group
-                        </button>
-                        <button
-                          v-if="isGroup"
-                          class="btn btn-outline-danger btn-sm"
-                          @click="leaveGroup(openConversation.id)"
-                        >
-                          Lascia Gruppo
-                        </button>
-                      </div>
                     </div>
                     <!-- Sezione messaggi scrollabile -->
                     <div class="flex-grow-1 overflow-auto p-3 messages-area">
@@ -252,25 +236,6 @@ export default {
         this.openConversation.name ||
         (this.openConversation.username && this.openConversation.username.startsWith('👥'))
       );
-    },
-    sortedConversationsAndGroups() {
-      const all = [
-        ...this.conversations.map(conv => ({
-          ...conv,
-          isGroup: false,
-          lastMessageSender: conv.lastMessageSender || "",
-          lastMessage: conv.lastMessage || "",
-          lastMessageTime: conv.lastMessageTime || ""
-        })),
-        ...this.groups.map(group => ({
-          ...group,
-          isGroup: true,
-          lastMessageSender: group.lastMessageSender || "",
-          lastMessage: group.lastMessage || "",
-          lastMessageTime: group.lastMessageTime || ""
-        }))
-      ];
-      return all.sort((a, b) => (b.lastMessageTime || '').localeCompare(a.lastMessageTime || ''));
     }
   },
   methods: {
@@ -476,26 +441,6 @@ export default {
       } else {
         this.groups = [];
       }
-    },
-    async leaveGroup(groupId) {
-      if (!confirm("Sei sicuro di voler lasciare questo gruppo?")) return;
-      const userId = localStorage.getItem("userId");
-      const res = await fetch(`${__API_URL__}/groups/${groupId}/members`, {
-        method: "DELETE",
-        headers: { Authorization: userId }
-      });
-      if (res.ok) {
-        this.successMsg = "Hai lasciato il gruppo.";
-        await this.loadAll();
-        this.openConversation = null;
-      } else {
-        alert("Errore durante l'uscita dal gruppo.");
-      }
-    },
-    openEditGroupModal() {
-      this.editGroupMode = true;
-      this.openCreateGroupModal = true;
-      this.editGroupId = this.openConversation.id;
     },
     closeCreateGroupModal() {
       this.openCreateGroupModal = false;
