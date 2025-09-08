@@ -33,35 +33,46 @@
 
             <!-- Qui la lista delle conversazioni -->
             <ul class="list-group mt-3">
+                <!-- Conversazioni 1:1 -->
                 <li
-                    v-for="item in sortedConversationsAndGroups"
-                    :key="(item.isGroup ? 'group-' : 'chat-') + item.id"
+                    v-for="conv in conversations"
+                    :key="'chat-' + conv.id"
                     class="list-group-item list-group-item-action d-flex align-items-center"
-                    :class="{ 'selected-conv': openConversation && openConversation.id === item.id }"
-                    @click="openConv(item.isGroup
-                      ? { ...item, username: item.name, profilePicture: item.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png' }
-                      : item
-                    )"
+                    :class="{ 'selected-conv': openConversation && openConversation.id === conv.id }"
+                    @click="openConv(conv)"
                     style="cursor:pointer;"
                 >
-                    <img
-                        :src="item.isGroup ? (item.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png') : item.profilePicture"
-                        alt="profile"
-                        width="40"
-                        class="rounded-circle me-2"
-                    />
+                    <img :src="conv.profilePicture" alt="profile" width="40" class="rounded-circle me-2" />
                     <div class="flex-grow-1">
-                        <div class="fw-bold">
-                            <span v-if="item.isGroup">👥 {{ item.name }}</span>
-                            <span v-else>{{ item.username }}</span>
-                        </div>
+                        <div class="fw-bold">{{ conv.username }}</div>
                         <div class="text-muted small">
-                            <span v-if="item.lastMessageSender">{{ item.lastMessageSender }}: </span>
-                            <span>{{ item.lastMessage && item.lastMessage.length > 24 ? item.lastMessage.slice(0, 24) + '…' : item.lastMessage }}</span>
+                            {{ conv.lastMessage && conv.lastMessage.length > 12 ? conv.lastMessage.slice(0, 12) + '…' : conv.lastMessage }}
                         </div>
                     </div>
                     <div class="text-end small text-muted ms-2">
-                        {{ item.lastMessageTime }}
+                        {{ conv.lastMessageTime }}
+                    </div>
+                </li>
+                
+                <!-- Gruppi -->
+                <li
+                    v-for="group in groups"
+                    :key="'group-' + group.id"
+                    class="list-group-item list-group-item-action d-flex align-items-center"
+                    :class="{ 'selected-conv': openConversation && openConversation.id === group.id }"
+                    @click="openConv({ ...group, username: group.name, profilePicture: group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png' })"
+                    style="cursor:pointer;"
+                >
+                    <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="40" class="rounded-circle me-2" />
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">👥 {{ group.name }}</div>
+                        <div class="text-muted small">
+                            <!-- Mostra anteprima solo se la logica backend la fornisce, altrimenti lascia vuoto -->
+                            {{ group.lastMessage && group.lastMessage.length > 12 ? group.lastMessage.slice(0, 12) + '…' : group.lastMessage }}
+                        </div>
+                    </div>
+                    <div class="text-end small text-muted ms-2">
+                        {{ group.lastMessageTime }}
                     </div>
                 </li>
             </ul>
