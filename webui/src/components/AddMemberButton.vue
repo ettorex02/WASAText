@@ -2,9 +2,9 @@
   <div class="d-inline">
     <button
       class="btn btn-outline-primary btn-sm me-2"
-      @click="open = true"
       :disabled="busy"
       title="Aggiungi membri"
+      @click="open = true"
     >
       + Membri
     </button>
@@ -17,21 +17,21 @@
           v-model="searchTerm"
           class="form-control mb-2"
           placeholder="Cerca utenti..."
-          @input="searchUsers"
           autocomplete="off"
+          @input="searchUsers"
         >
 
         <ul
-          class="list-group mb-2"
           v-if="searchResults.length"
+          class="list-group mb-2"
           style="max-height:160px; overflow-y:auto;"
         >
           <li
             v-for="u in searchResults"
             :key="u.id"
             class="list-group-item list-group-item-action d-flex align-items-center"
-            @click="addCandidate(u)"
             style="cursor:pointer;"
+            @click="addCandidate(u)"
           >
             <img :src="u.profilePicture" class="rounded-circle me-2" width="32" height="32" alt="">
             <span>{{ u.username }}</span>
@@ -52,10 +52,12 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-3">
-          <button class="btn btn-secondary btn-sm" @click="close" :disabled="busy">Chiudi</button>
-          <button class="btn btn-primary btn-sm"
-                  @click="addGroupMembers"
-                  :disabled="!candidates.length || busy">
+          <button class="btn btn-secondary btn-sm" :disabled="busy" @click="close">Chiudi</button>
+          <button
+            class="btn btn-primary btn-sm"
+            :disabled="!candidates.length || busy"
+            @click="addGroupMembers"
+          >
             Aggiungi
           </button>
         </div>
