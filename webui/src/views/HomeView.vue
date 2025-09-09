@@ -120,8 +120,8 @@
               <AddMemberButton
                 :group-id="openConversation.id"
                 :current-members="openConversation.members || []"
-                @members-added="handleMembersAdded"
                 class="me-1"
+                @members-added="handleMembersAdded"
               />
               <LeaveGroupButton
                 :group-id="openConversation.id"
@@ -153,7 +153,17 @@
                   <span v-if="msg.is_forwarded || msg.isForwarded" class="badge bg-warning text-dark mb-1" style="font-size: 0.9rem;">
                     Inoltrato
                   </span>
-                  {{ msg.content }}
+                  <template v-if="(msg.mediaType || msg.media_type) === 'image'">
+                    <img
+                      :src="msg.content"
+                      class="chat-image rounded mb-1"
+                      style="max-width:260px;max-height:260px;cursor:pointer;display:block;"
+                      @click="fullscreenImage = msg.content"
+                    >
+                  </template>
+                  <template v-else>
+                    {{ msg.content }}
+                  </template>
                   <div class="small text-muted mt-1 d-flex align-items-center">
                     <span>{{ msg.timestamp }}</span>
                     <span v-if="isMyMessage(msg)" :class="getStatusClass(msg.status)" style="margin-left: 8px;">
@@ -180,10 +190,59 @@
             </div>
           </div>
           <!-- Barra invio messaggi SEMPRE visibile in basso -->
-          <form class="d-flex border-top p-3 bg-white rounded-bottom" @submit.prevent="sendMessage">
-            <input v-model="newMessage" class="form-control me-2" placeholder="Scrivi un messaggio..." required>
-            <button class="btn btn-primary" type="submit">Invia</button>
+          <form class="d-flex flex-column border-top p-3 bg-white rounded-bottom" @submit.prevent="sendMessage">
+            <div v-if="imagePreview" class="mb-2 d-flex align-items-start gap-2">
+              <div class="position-relative">
+                <img :src="imagePreview" style="max-width:120px;max-height:120px;" class="rounded border">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle"
+                  style="line-height:1;padding:2px 6px;"
+                  @click="removeImage"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="small text-muted">
+                Anteprima immagine
+              </div>
+            </div>
+            <div class="d-flex w-100">
+              <button
+                type="button"
+                class="btn btn-outline-secondary me-2"
+                title="Immagine"
+                @click="onPickImage"
+              >
+                📷
+              </button>
+              <input
+                ref="imageInput"
+                type="file"
+                accept="image/*"
+                class="d-none"
+                @change="onImageSelected"
+              >
+              <input
+                v-model="newMessage"
+                class="form-control me-2"
+                placeholder="Scrivi un messaggio..."
+                :required="!imagePreview"
+              >
+              <button class="btn btn-primary" type="submit">Invia</button>
+            </div>
           </form>
+        </div>
+        <div
+          v-if="fullscreenImage"
+          class="modal-backdrop"
+          style="background:rgba(0,0,0,0.85);"
+          @click="fullscreenImage = null"
+        >
+          <img
+            :src="fullscreenImage"
+            style="max-width:90%;max-height:90%;object-fit:contain;border:4px solid #fff;border-radius:12px;"
+          >
         </div>
         <div v-else class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
           Nessuna conversazione trovata. Inizia a cercare utenti per iniziare una chat!
@@ -257,7 +316,10 @@ export default {
       groups: [],
       openCreateGroupModal: false,
       editGroupMode: false,
-      editGroupId: null
+      editGroupId: null,
+      imageFile: null,
+      imagePreview: null,
+      fullscreenImage: null
     }
   },
   computed: {
@@ -394,18 +456,42 @@ export default {
         this.messages = [];
       }
     },
+    onPickImage() { this.$refs.imageInput.click(); },
+    async onImageSelected(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Immagine troppo grande (max 2MB)");
+        e.target.value = "";
+        return;
+      }
+      this.imageFile = file;
+      const r = new FileReader();
+      r.onload = ev => { this.imagePreview = ev.target.result; };
+      r.readAsDataURL(file);
+    },
+    removeImage() {
+      this.imageFile = null;
+      this.imagePreview = null;
+      if (this.$refs.imageInput) this.$refs.imageInput.value = "";
+    },
     async sendMessage() {
-      if (!this.newMessage.trim() || !this.openConversation) return;
+      if (!this.openConversation) return;
+      const hasText = this.newMessage.trim().length > 0;
+      const hasImage = !!this.imagePreview;
+      if (!hasText && !hasImage) return;
       const userId = localStorage.getItem("userId");
       try {
-        await this.$axios.post(`/conversations/${this.openConversation.id}/messages`, {
-          content: this.newMessage,
-          mediaType: "text",
+        const payload = {
+          content: hasImage ? this.imagePreview : this.newMessage.trim(),
+          mediaType: hasImage ? "image" : "text",
           isForwarded: false
-        }, {
+        };
+        await this.$axios.post(`/conversations/${this.openConversation.id}/messages`, payload, {
           headers: { "Content-Type": "application/json", Authorization: userId }
         });
         this.newMessage = "";
+        this.removeImage();
         await this.getConversation(this.openConversation.id);
       } catch {}
     },
@@ -557,4 +643,5 @@ export default {
 .create-group-section {
   padding: 1rem 0 0 0;
 }
+.chat-image:hover { opacity:0.9;transition:opacity .15s; }
 </style>
