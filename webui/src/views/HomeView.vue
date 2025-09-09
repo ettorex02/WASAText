@@ -144,7 +144,7 @@
                   class="fw-bold mb-1"
                   style="font-size: 1rem;"
                 >
-                  {{ msg.sender.displayName || msg.sender.username }}
+                  {{ msg.sender.username }}
                 </div>
                 <div
                   :class="isMyMessage(msg) ? 'msg-sent' : 'msg-received'"
