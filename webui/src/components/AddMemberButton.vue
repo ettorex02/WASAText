@@ -2,38 +2,66 @@
   <div class="d-inline">
     <button
       class="btn btn-outline-primary btn-sm me-2"
+      @click="open = true"
+      :disabled="busy"
       title="Aggiungi membri"
-      @click="openModal = true"
     >
       + Membri
     </button>
-    <div v-if="openModal" class="modal-backdrop">
-      <div class="modal-dialog">
-        <div class="modal-content p-3">
-          <h5>Aggiungi membri al gruppo</h5>
-          <input
-            v-model="searchUser"
-            class="form-control mb-2"
-            placeholder="Cerca utenti per username..."
-            @input="searchUsers"
-            autocomplete="off"
+
+    <div v-if="open" class="amb-backdrop">
+      <div class="amb-modal">
+        <h6 class="mb-3">Aggiungi membri</h6>
+
+        <input
+          v-model="searchTerm"
+          class="form-control mb-2"
+          placeholder="Cerca utenti..."
+          @input="searchUsers"
+          autocomplete="off"
+        >
+
+        <ul
+          class="list-group mb-2"
+          v-if="searchResults.length"
+          style="max-height:160px; overflow-y:auto;"
+        >
+          <li
+            v-for="u in searchResults"
+            :key="u.id"
+            class="list-group-item list-group-item-action d-flex align-items-center"
+            @click="addCandidate(u)"
+            style="cursor:pointer;"
           >
-          <ul class="list-group mb-2" style="max-height: 200px; overflow-y: auto;">
-            <li
-              v-for="user in searchResults"
-              :key="user.username"
-              class="list-group-item list-group-item-action d-flex align-items-center"
-              style="cursor:pointer;"
-              @mousedown.prevent="addToGroup(user)"
-            >
-              <img :src="user.profilePicture" alt="profile" width="32" height="32" class="rounded-circle me-2">
-              <span>{{ user.username }}</span>
-            </li>
-          </ul>
-          <button class="btn btn-secondary" @click="closeModal">Chiudi</button>
-          <div v-if="addError" class="alert alert-danger mt-2">{{ addError }}</div>
-          <div v-if="addSuccess" class="alert alert-success mt-2">{{ addSuccess }}</div>
+            <img :src="u.profilePicture" class="rounded-circle me-2" width="32" height="32" alt="">
+            <span>{{ u.username }}</span>
+          </li>
+        </ul>
+
+        <div v-if="candidates.length" class="mb-2">
+          <span
+            v-for="c in candidates"
+            :key="c.id"
+            class="badge bg-primary me-2 mb-2"
+            style="font-size:.9rem;"
+          >
+            <img :src="c.profilePicture" width="18" height="18" class="rounded-circle me-1" alt="">
+            {{ c.username }}
+            <span class="ms-1" style="cursor:pointer;" @click="removeCandidate(c.id)">×</span>
+          </span>
         </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button class="btn btn-secondary btn-sm" @click="close" :disabled="busy">Chiudi</button>
+          <button class="btn btn-primary btn-sm"
+                  @click="addGroupMembers"
+                  :disabled="!candidates.length || busy">
+            Aggiungi
+          </button>
+        </div>
+
+        <div v-if="error" class="alert alert-danger py-1 px-2 mt-3 mb-0 small">{{ error }}</div>
+        <div v-if="success" class="alert alert-success py-1 px-2 mt-3 mb-0 small">{{ success }}</div>
       </div>
     </div>
   </div>
@@ -44,7 +72,7 @@ export default {
   name: 'AddMemberButton',
   props: {
     groupId: {
-      type: [String, Number],
+      type: [Number, String],
       required: true
     },
     currentMembers: {
@@ -54,60 +82,84 @@ export default {
   },
   data() {
     return {
-      openModal: false,
-      searchUser: "",
+      open: false,
+      searchTerm: '',
       searchResults: [],
-      addError: "",
-      addSuccess: ""
+      candidates: [],
+      error: '',
+      success: '',
+      busy: false
+    }
+  },
+  computed: {
+    existingUsernames() {
+      return this.currentMembers.map(m => m.username);
     }
   },
   methods: {
-    closeModal() {
-      this.openModal = false;
-      this.searchUser = "";
-      this.searchResults = [];
-      this.addError = "";
-      this.addSuccess = "";
-    },
     async searchUsers() {
-      this.addError = "";
-      this.addSuccess = "";
-      if (this.searchUser.length < 1) {
+      this.error = '';
+      this.success = '';
+      if (this.searchTerm.trim().length < 1) {
         this.searchResults = [];
         return;
       }
-      const userId = localStorage.getItem("userId");
-      const myUsername = localStorage.getItem("username");
+      const auth = localStorage.getItem('userId');
       try {
-        const res = await this.$axios.get(`/search/users?q=${encodeURIComponent(this.searchUser)}`, {
-          headers: { Authorization: userId }
+        const res = await this.$axios.get(`/search/users?q=${encodeURIComponent(this.searchTerm.trim())}`, {
+          headers: { Authorization: auth }
         });
-        const results = res.data;
-        // Escludi chi è già nel gruppo
-        const current = this.currentMembers.map(u => u.username);
-        this.searchResults = results.filter(
-          u => u.username !== myUsername && !current.includes(u.username)
+        const meUsername = localStorage.getItem('username');
+        this.searchResults = res.data.filter(u =>
+          u.username !== meUsername &&
+          !this.existingUsernames.includes(u.username) &&
+            !this.candidates.some(c => c.username === u.username)
         );
       } catch {
         this.searchResults = [];
       }
     },
-    async addToGroup(user) {
-      this.addError = "";
-      this.addSuccess = "";
-      const userId = localStorage.getItem("userId");
+    addCandidate(user) {
+      if (!this.candidates.some(c => c.username === user.username)) {
+        this.candidates.push(user);
+      }
+      this.searchTerm = '';
+      this.searchResults = [];
+    },
+    removeCandidate(username) {
+      this.candidates = this.candidates.filter(c => c.username !== username);
+    },
+    resetState() {
+      this.searchTerm = '';
+      this.searchResults = [];
+      this.candidates = [];
+      this.error = '';
+      this.success = '';
+      this.busy = false;
+    },
+    close() {
+      this.open = false;
+      this.resetState();
+    },
+    // operationId: addGroupMembers
+    async addGroupMembers() {
+      this.error = '';
+      this.success = '';
+      if (!this.candidates.length) return;
+      this.busy = true;
+      const auth = localStorage.getItem('userId');
       try {
-        await this.$axios.post(`/groups/${this.groupId}/members`, {
-          username: user.username
-        }, {
-          headers: { Authorization: userId }
+        const members = this.candidates.map(c => c.username);
+        await this.$axios.patch(`/groups/${this.groupId}/members`, { members }, {
+          headers: { Authorization: auth }
         });
-        this.addSuccess = `Utente ${user.username} aggiunto!`;
-        this.searchUser = "";
-        this.searchResults = [];
-        this.$emit('member-added');
+        this.success = 'Membri aggiunti';
+        this.$emit('members-added', members);
+        setTimeout(() => this.close(), 600);
       } catch (e) {
-        this.addError = e.response?.data?.message || "Errore aggiunta membro";
+        this.error = e.response?.data?.message || 'Errore aggiunta membri';
+      } finally {
+        this.busy = false;
       }
     }
   }
@@ -115,19 +167,21 @@ export default {
 </script>
 
 <style scoped>
-.modal-backdrop {
+.amb-backdrop {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 2000;
+  inset: 0;
+  background: rgba(0,0,0,.35);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2100;
 }
-.modal-dialog {
+.amb-modal {
   background: #fff;
+  width: 320px;
   border-radius: 12px;
-  max-width: 400px;
-  width: 100%;
+  padding: 16px 18px 18px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.15);
+  position: relative;
 }
 </style>

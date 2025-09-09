@@ -116,8 +116,13 @@
         >
           <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
             <h5 class="mb-0">{{ openConversation.username }}</h5>
-            <!-- Bottone per lasciare il gruppo, visibile solo nelle conversazioni di gruppo -->
-            <div v-if="isGroup" class="ms-auto">
+            <div v-if="isGroup" class="ms-auto d-flex align-items-center">
+              <AddMemberButton
+                :group-id="openConversation.id"
+                :current-members="openConversation.members || []"
+                @members-added="handleMembersAdded"
+                class="me-1"
+              />
               <LeaveGroupButton
                 :group-id="openConversation.id"
                 @left-group="handleGroupLeft"
@@ -227,9 +232,10 @@
 import MessageReactions from '@/components/MessageReactions.vue';
 import GroupModal from '@/components/GroupModal.vue';
 import LeaveGroupButton from '@/components/LeaveGroupButton.vue';
+import AddMemberButton from '@/components/AddMemberButton.vue'; // <-- Aggiungi questo import
 
 export default {
-  components: { MessageReactions, GroupModal, LeaveGroupButton },
+  components: { MessageReactions, GroupModal, LeaveGroupButton, AddMemberButton }, // <-- Registra il componente
   data() {
     return {
       errormsg: null,
@@ -491,7 +497,8 @@ export default {
         this.openConversation = null;
         this.messages = [];
       }
-    }
+    },
+    handleMembersAdded() { this.loadAll(); } // <-- Facoltativo per refresh
   }
 }
 </script>
