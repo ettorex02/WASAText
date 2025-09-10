@@ -45,7 +45,7 @@
           <div class="flex-grow-1">
             <div class="fw-bold">{{ t.isGroup ? ('👥 ' + t.username) : t.username }}</div>
             <div class="text-muted small">
-              {{ t.lastMessage && t.lastMessage.length > 12 ? t.lastMessage.slice(0, 12) + '…' : t.lastMessage }}
+              {{ isImageLike(t.lastMessage) ? '📷 Foto' : (t.lastMessage && t.lastMessage.length > 12 ? t.lastMessage.slice(0, 12) + '…' : t.lastMessage) }}
             </div>
           </div>
           <div class="text-end small text-muted ms-2">
@@ -596,7 +596,14 @@ export default {
       // riallinea con il backend
       this.listGroups();
     },
-    handleMembersAdded() { this.loadAll(); } // <-- Facoltativo per refresh
+    handleMembersAdded() { this.loadAll(); }, // <-- Facoltativo per refresh
+
+    // Anteprima immagine: mostra "📷 Foto" se l'ultimo messaggio è un'immagine
+    isImageLike(v) {
+      if (!v) return false;
+      const s = String(v);
+      return s.startsWith('data:image') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(s);
+    }
   }
 }
 </script>
