@@ -33,46 +33,23 @@
 
       <!-- Qui la lista delle conversazioni -->
       <ul class="list-group mt-3">
-        <!-- Conversazioni 1:1 -->
         <li
-          v-for="conv in conversations"
-          :key="'chat-' + conv.id"
+          v-for="t in orderedThreads"
+          :key="'thread-' + (t.isGroup ? 'g' : 'dm') + '-' + t.id"
           class="list-group-item list-group-item-action d-flex align-items-center"
-          :class="{ 'selected-conv': openConversation && openConversation.id === conv.id }"
+          :class="{ 'selected-conv': openConversation && openConversation.id === t.id }"
           style="cursor:pointer;"
-          @click="openConv(conv)"
+          @click="openConv(t)"
         >
-          <img :src="conv.profilePicture" alt="profile" width="40" class="rounded-circle me-2">
+          <img :src="t.profilePicture" alt="avatar" width="40" class="rounded-circle me-2">
           <div class="flex-grow-1">
-            <div class="fw-bold">{{ conv.username }}</div>
+            <div class="fw-bold">{{ t.isGroup ? ('👥 ' + t.username) : t.username }}</div>
             <div class="text-muted small">
-              {{ conv.lastMessage && conv.lastMessage.length > 12 ? conv.lastMessage.slice(0, 12) + '…' : conv.lastMessage }}
+              {{ t.lastMessage && t.lastMessage.length > 12 ? t.lastMessage.slice(0, 12) + '…' : t.lastMessage }}
             </div>
           </div>
           <div class="text-end small text-muted ms-2">
-            {{ conv.lastMessageTime }}
-          </div>
-        </li>
-                
-        <!-- Gruppi -->
-        <li
-          v-for="group in groups"
-          :key="'group-' + group.id"
-          class="list-group-item list-group-item-action d-flex align-items-center"
-          :class="{ 'selected-conv': openConversation && openConversation.id === group.id }"
-          style="cursor:pointer;"
-          @click="openConv({ ...group, username: group.name, profilePicture: group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png' })"
-        >
-          <img :src="group.photo || 'https://cdn-icons-png.flaticon.com/512/74/74472.png'" alt="group" width="40" class="rounded-circle me-2">
-          <div class="flex-grow-1">
-            <div class="fw-bold">👥 {{ group.name }}</div>
-            <div class="text-muted small">
-              <!-- Mostra anteprima solo se la logica backend la fornisce, altrimenti lascia vuoto -->
-              {{ group.lastMessage && group.lastMessage.length > 12 ? group.lastMessage.slice(0, 12) + '…' : group.lastMessage }}
-            </div>
-          </div>
-          <div class="text-end small text-muted ms-2">
-            {{ group.lastMessageTime }}
+            {{ t.lastMessageTime }}
           </div>
         </li>
       </ul>
@@ -329,6 +306,25 @@ export default {
         this.openConversation.name ||
         (this.openConversation.username && this.openConversation.username.startsWith('👥'))
       );
+    },
+    orderedThreads() {
+      const GROUP_ICON = 'https://cdn-icons-png.flaticon.com/512/74/74472.png';
+      const convs = (this.conversations || []).map(c => ({ ...c, isGroup: false }));
+      const grps = (this.groups || []).map(g => ({
+        id: g.id,
+        username: g.name,                // per openConv/header
+        name: g.name,                    // mantiene isGroup attuale basato su .name
+        profilePicture: g.photo || GROUP_ICON,
+        lastMessage: g.lastMessage || '',
+        lastMessageTime: g.lastMessageTime || '',
+        members: g.members || [],
+        isGroup: true
+      }));
+      return [...convs, ...grps].sort((a, b) => {
+        const ta = Date.parse(a.lastMessageTime) || 0;
+        const tb = Date.parse(b.lastMessageTime) || 0;
+        return tb - ta; // più recente in alto
+      });
     }
   },
   mounted() {
