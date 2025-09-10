@@ -55,3 +55,12 @@ type ConversationPreview struct {
 	LastMessage     string `json:"lastMessage"`
 	LastMessageTime string `json:"lastMessageTime"`
 }
+
+type GroupPreview struct {
+	ID              int    `json:"id"`
+	Name            string `json:"name"`
+	Photo           string `json:"photo"`
+	Members         []User `json:"members"`
+	LastMessage     string `json:"lastMessage"`
+	LastMessageTime string `json:"lastMessageTime"`
+}

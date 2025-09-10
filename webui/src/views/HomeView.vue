@@ -97,8 +97,9 @@
 
     <!-- Main content -->
     <div class="flex-grow-1">
-      <div style="position: absolute; top: 80px; right: 30px; z-index: 10;">
-        <button class="btn btn-outline-primary me-2" @click="goToProfile">Profilo</button>
+      <!-- Top actions bar (no absolute, evita sovrapposizioni) -->
+      <div class="p-3 d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-primary" @click="goToProfile">Profilo</button>
         <button class="btn btn-danger" @click="logout">Logout</button>
       </div>
 

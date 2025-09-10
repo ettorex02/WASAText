@@ -64,7 +64,7 @@ type AppDatabase interface {
 	GetReactions(messageId int) ([]*structures.Reaction, error)
 	// Gruppi (usano la logica unificata delle conversazioni)
 	AddToGroup(name string, photo string, usernames []string) (*structures.Conversation, error) // operationId: addToGroup
-	ListGroups(userID int) ([]*structures.Conversation, error)                                  // operationId: listGroups
+	ListGroups(userID int) ([]*structures.GroupPreview, error)                                  // operationId: listGroups
 	LeaveGroup(groupID int, userID int) error
 	SetGroupName(groupID int, newName string) error
 	SetGroupPhoto(groupID int, photoUrl string) error

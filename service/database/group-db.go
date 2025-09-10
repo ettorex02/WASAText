@@ -60,9 +60,9 @@ func (db *appdbimpl) AddToGroup(name string, photo string, usernames []string) (
 }
 
 // ListGroups: restituisce tutte le conversazioni di gruppo dell'utente
-func (db *appdbimpl) ListGroups(userID int) ([]*structures.Conversation, error) {
+func (db *appdbimpl) ListGroups(userID int) ([]*structures.GroupPreview, error) {
 	rows, err := db.c.Query(`
-        SELECT c.id, c.name, c.photo
+        SELECT c.id, COALESCE(c.name,''), COALESCE(c.photo,'')
         FROM conversations c
         JOIN conversation_members cm ON c.id = cm.conversation_id
         WHERE cm.user_id = ? AND c.is_group = 1
@@ -72,19 +72,32 @@ func (db *appdbimpl) ListGroups(userID int) ([]*structures.Conversation, error) 
 	}
 	defer rows.Close()
 
-	var groups []*structures.Conversation
+	var groups []*structures.GroupPreview
 	for rows.Next() {
-		var conv structures.Conversation
-		if err := rows.Scan(&conv.ID, &conv.Name, &conv.Photo); err != nil {
+		var id int
+		var name, photo string
+		if err := rows.Scan(&id, &name, &photo); err != nil {
 			return nil, err
 		}
-		conv.IsGroup = true
-		members, err := db.getConversationMembers(conv.ID)
+
+		// Prendi ultimo messaggio
+		var lastMsg, lastTime string
+		_ = db.c.QueryRow(`SELECT content, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp DESC LIMIT 1`, id).Scan(&lastMsg, &lastTime)
+
+		// Prendi membri del gruppo
+		members, err := db.getConversationMembers(id)
 		if err != nil {
 			return nil, err
 		}
-		conv.Members = members
-		groups = append(groups, &conv)
+
+		groups = append(groups, &structures.GroupPreview{
+			ID:              id,
+			Name:            name,
+			Photo:           photo,
+			Members:         members,
+			LastMessage:     lastMsg,
+			LastMessageTime: lastTime,
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
