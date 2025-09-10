@@ -115,7 +115,6 @@ components:
           example: 😄
         user:
           $ref: '#/components/schemas/User'
-          description: User who made the reaction
 
     Message:
       type: object
@@ -154,7 +153,6 @@ components:
             $ref: '#/components/schemas/Reaction'
         sender:
           $ref: '#/components/schemas/User'
-          description: User who sent the message
         status:
           type: string
           enum: [sent, received, read]
@@ -178,11 +176,13 @@ components:
           type: string
           description: Name of the conversation (null for 1:1, set for groups)
           example: Friends Group
+          nullable: true
         photo:
           type: string
           format: uri
           description: URL of the group photo (null for 1:1, set for groups)
           example: https://example.com/group.jpg
+          nullable: true
         is_group:
           type: boolean
           description: True if this conversation is a group, false if it's a 1:1 chat
