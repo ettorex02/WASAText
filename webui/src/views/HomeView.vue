@@ -579,11 +579,26 @@ export default {
       this.editGroupId = null;
     },
     handleGroupLeft(groupId) {
-      this.conversations = this.conversations.filter(conv => conv.id !== groupId);
+      // rimuovi il gruppo dalla lista
+      this.groups = this.groups.filter(g => g.id !== groupId);
+
+      // se stavi guardando quel gruppo: chiudi tutto
       if (this.openConversation && this.openConversation.id === groupId) {
+        if (this.messagesPolling) {
+          clearInterval(this.messagesPolling);
+          this.messagesPolling = null;
+        }
+        this.forwardModalOpen = false;
+        this.forwardMsg = null;
+        this.fullscreenImage = null;
+        this.newMessage = '';
+        this.removeImage?.();
         this.openConversation = null;
         this.messages = [];
       }
+
+      // riallinea con il backend
+      this.listGroups();
     },
     handleMembersAdded() { this.loadAll(); } // <-- Facoltativo per refresh
   }
