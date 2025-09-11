@@ -240,6 +240,31 @@
       <div class="modal-dialog">
         <div class="modal-content p-3">
           <h5>Scegli la chat dove inoltrare</h5>
+
+          <!-- NUOVO: cerca utenti (no gruppi) e inoltra -->
+          <div class="mb-2">
+            <input
+              v-model="forwardSearch"
+              class="form-control"
+              placeholder="Cerca utente per inoltrare..."
+              autocomplete="off"
+              @input="forwardSearchUsers"
+            >
+          </div>
+          <ul v-if="forwardSearch.length" class="list-group mb-3" style="max-height:220px; overflow:auto;">
+            <li
+              v-for="u in forwardResults"
+              :key="'fuser-' + u.id"
+              class="list-group-item list-group-item-action d-flex align-items-center"
+              style="cursor:pointer;"
+              @click="forwardToUser(u)"
+            >
+              <img :src="u.profilePicture || 'https://cdn-icons-png.flaticon.com/512/847/847969.png'" alt="profile" width="32" class="rounded-circle me-2">
+              {{ u.username }}
+            </li>
+            <li v-if="forwardResults.length === 0" class="list-group-item text-muted">Nessun utente trovato</li>
+          </ul>
+
           <ul class="list-group">
             <!-- Conversazioni 1:1 -->
             <li
@@ -252,7 +277,7 @@
               <img :src="conv.profilePicture" alt="profile" width="32" class="rounded-circle me-2">
               {{ conv.username }}
             </li>
-                
+
             <!-- Gruppi -->
             <li
               v-for="group in groups"
@@ -265,6 +290,7 @@
               👥 {{ group.name }}
             </li>
           </ul>
+
           <button class="btn btn-secondary mt-3" @click="closeForwardModal">Annulla</button>
         </div>
       </div>
@@ -305,7 +331,9 @@ export default {
       editGroupId: null,
       imageFile: null,
       imagePreview: null,
-      fullscreenImage: null
+      fullscreenImage: null,
+      forwardSearch: "",
+      forwardResults: []
     }
   },
   computed: {
@@ -542,9 +570,47 @@ export default {
       this.forwardMsg = msg;
       this.forwardModalOpen = true;
     },
+    // Cerca solo utenti (come per avviare una conversazione)
+    async forwardSearchUsers() {
+      const q = this.forwardSearch.trim();
+      if (!q) { this.forwardResults = []; return; }
+      const userId = localStorage.getItem("userId");
+      const myUsername = localStorage.getItem("username");
+      try {
+        const res = await this.$axios.get(`/search/users?q=${encodeURIComponent(q)}`, {
+          headers: { Authorization: userId }
+        });
+        const results = Array.isArray(res.data) ? res.data : [];
+        this.forwardResults = results.filter(u => u.username !== myUsername);
+      } catch {
+        this.forwardResults = [];
+      }
+    },
+    // Crea/recupera la conversazione con l'utente e inoltra
+    async forwardToUser(user) {
+      if (!this.forwardMsg || !user?.id) return;
+      const convId = await this.ensureConversationWithUser(user.id);
+      if (convId) await this.forwardMessage(convId);
+    },
+    async ensureConversationWithUser(targetUserId) {
+      const userId = localStorage.getItem("userId");
+      try {
+        const res = await this.$axios.post(
+          "/conversations",
+          { userId: targetUserId },
+          { headers: { "Content-Type": "application/json", Authorization: userId } }
+        );
+        return res.data?.conversationId || null;
+      } catch {
+        return null;
+      }
+    },
     closeForwardModal() {
       this.forwardMsg = null;
       this.forwardModalOpen = false;
+      // pulizia ricerca inoltro
+      this.forwardSearch = "";
+      this.forwardResults = [];
     },
     async forwardMessage(targetConversationId) {
       if (!this.forwardMsg) return;
