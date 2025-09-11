@@ -99,7 +99,7 @@
                 :key="'gm-' + openConversation.id + '-' + (groupMembersForOpen?.length || 0)"
                 :group-id="openConversation.id"
                 :current-members="groupMembersForOpen"
-                class="me-5"
+                class="me-3"
                 @refresh-groups="listGroups"
               />
               <AddMemberButton
@@ -111,6 +111,12 @@
               <LeaveGroupButton
                 :group-id="openConversation.id"
                 @left-group="handleGroupLeft"
+              />
+              <EditGroupButton
+                :group-id="openConversation.id"
+                :current-members="groupMembersForOpen"
+                class="me-1"
+                @group-updated="loadAll"
               />
             </div>
           </div>
@@ -303,10 +309,18 @@ import MessageReactions from '@/components/MessageReactions.vue';
 import GroupModal from '@/components/GroupModal.vue';
 import LeaveGroupButton from '@/components/LeaveGroupButton.vue';
 import AddMemberButton from '@/components/AddMemberButton.vue';
-import GroupMembersButton from '@/components/GroupMembersButton.vue'; // <-- ADD
+import GroupMembersButton from '@/components/GroupMembersButton.vue';
+import EditGroupButton from '@/components/EditGroupButton.vue';
 
 export default {
-  components: { MessageReactions, GroupModal, LeaveGroupButton, AddMemberButton, GroupMembersButton }, // <-- ADD
+  components: {
+    MessageReactions,
+    GroupModal,
+    LeaveGroupButton,
+    AddMemberButton,
+    GroupMembersButton,
+    EditGroupButton
+  },
   data() {
     return {
       errormsg: null,

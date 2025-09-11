@@ -164,23 +164,6 @@ export default {
       } catch (e) {
         this.groupError = e.response?.data?.message || "Errore creazione gruppo";
       }
-    },
-    // operationId: setGroupName
-    async setGroupName() {
-      const userId = localStorage.getItem("userId");
-      return this.$axios.patch(`/groups/${this.editGroupId}/name`,
-        { name: this.newGroupName },
-        { headers: { Authorization: userId } }
-      );
-    },
-    // operationId: setGroupPhoto
-    async setGroupPhoto() {
-      if (!this.newGroupPhoto) return;
-      const userId = localStorage.getItem("userId");
-      return this.$axios.patch(`/groups/${this.editGroupId}/photo`,
-        { photo: this.newGroupPhoto },
-        { headers: { Authorization: userId } }
-      );
     }
   }
 }
