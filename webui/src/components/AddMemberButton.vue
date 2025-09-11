@@ -6,7 +6,7 @@
       title="Aggiungi membri"
       @click="open = true"
     >
-      + Membri
+      Aggiungi Membri
     </button>
 
     <div v-if="open" class="amb-backdrop">

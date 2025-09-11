@@ -95,9 +95,16 @@
           <div class="border-bottom p-3 rounded-top bg-white d-flex align-items-center justify-content-between">
             <h5 class="mb-0">{{ openConversation.username }}</h5>
             <div v-if="isGroup" class="ms-auto d-flex align-items-center">
+              <GroupMembersButton
+                :key="'gm-' + openConversation.id + '-' + (groupMembersForOpen?.length || 0)"
+                :group-id="openConversation.id"
+                :current-members="groupMembersForOpen"
+                class="me-5"
+                @refresh-groups="listGroups"
+              />
               <AddMemberButton
                 :group-id="openConversation.id"
-                :current-members="openConversation.members || []"
+                :current-members="groupMembersForOpen"
                 class="me-1"
                 @members-added="handleMembersAdded"
               />
@@ -269,10 +276,11 @@
 import MessageReactions from '@/components/MessageReactions.vue';
 import GroupModal from '@/components/GroupModal.vue';
 import LeaveGroupButton from '@/components/LeaveGroupButton.vue';
-import AddMemberButton from '@/components/AddMemberButton.vue'; // <-- Aggiungi questo import
+import AddMemberButton from '@/components/AddMemberButton.vue';
+import GroupMembersButton from '@/components/GroupMembersButton.vue'; // <-- ADD
 
 export default {
-  components: { MessageReactions, GroupModal, LeaveGroupButton, AddMemberButton }, // <-- Registra il componente
+  components: { MessageReactions, GroupModal, LeaveGroupButton, AddMemberButton, GroupMembersButton }, // <-- ADD
   data() {
     return {
       errormsg: null,
@@ -325,6 +333,11 @@ export default {
         const tb = Date.parse(b.lastMessageTime) || 0;
         return tb - ta; // più recente in alto
       });
+    },
+    groupMembersForOpen() {
+      if (!this.openConversation) return [];
+      const g = (this.groups || []).find(x => String(x.id) === String(this.openConversation.id));
+      return Array.isArray(g?.members) ? g.members : (this.openConversation.members || []);
     }
   },
   mounted() {
