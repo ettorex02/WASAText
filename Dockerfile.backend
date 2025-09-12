@@ -13,7 +13,8 @@ COPY /go.sum /app/go.sum
 WORKDIR /app
 
 # Compila l'applicazione
-RUN CGO_ENABLED=1 go build ./cmd/webapi/ 
+# RUN CGO_ENABLED=1 go build ./cmd/webapi/ 
+RUN go build -o webapi ./cmd/webapi/
 
 # Usa una piccola immagine per il runtime
 FROM golang:1.17
