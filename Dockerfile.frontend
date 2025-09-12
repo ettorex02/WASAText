@@ -8,7 +8,6 @@ WORKDIR /app/webui
 
 RUN yarn cache clean
 RUN corepack enable && yarn install --immutable --check-cache
-RUN yarn rebuild esbuild
 
 # Compila l'applicazione per la produzione
 RUN yarn build-prod
