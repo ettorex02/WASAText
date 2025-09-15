@@ -1,4 +1,5 @@
 <template>
+
   <div class="d-inline">
     <button
       class="btn btn-outline-secondary btn-sm me-2"
@@ -51,11 +52,11 @@ export default {
   emits: ['refresh-groups'],
   data() {
     return {
-      open: false,
-      nameLocal: '',
-      photoLocal: '',
-      loading: false,
-      error: ''
+      open: false,         
+      nameLocal: '',       
+      photoLocal: '',      
+      loading: false,      
+      error: ''            
     }
   },
   computed: {
@@ -79,7 +80,6 @@ export default {
       e.target.src = 'https://cdn-icons-png.flaticon.com/512/74/74472.png';
     },
 
-    // MANTENUTE: stesse funzioni, stessi nomi
     async setGroupName() {
       const userId = localStorage.getItem('userId');
       await this.$axios.patch(
